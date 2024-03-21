@@ -33,7 +33,7 @@ from opensora.utils.train_utils import update_ema
 
 def main():
     # ======================================================
-    # 1. args & cfg
+    # step: 1. args & cfg
     # ======================================================
     cfg = parse_configs(training=True)
     print(cfg)
@@ -41,18 +41,19 @@ def main():
     save_training_config(cfg._cfg_dict, exp_dir)
 
     # ======================================================
-    # 2. runtime variables & colossalai launch
+    # step: 2. runtime variables & colossalai launch
     # ======================================================
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
-    assert cfg.dtype in ["fp16", "bf16"], f"Unknown mixed precision {cfg.dtype}"
+    assert cfg.dtype in [
+        "fp16", "bf16"], f"Unknown mixed precision {cfg.dtype}"
 
-    # 2.1. colossalai init distributed training
+    # step: 2.1. colossalai init distributed training
     colossalai.launch_from_torch({})
     coordinator = DistCoordinator()
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
 
-    # 2.2. init logger, tensorboard & wandb
+    # step: 2.2. init logger, tensorboard & wandb
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
@@ -63,7 +64,7 @@ def main():
         if cfg.wandb:
             wandb.init(project="minisora", name=exp_name, config=cfg._cfg_dict)
 
-    # 2.3. initialize ColossalAI booster
+    # step: 2.3. initialize ColossalAI booster
     if cfg.plugin == "zero2":
         plugin = LowLevelZeroPlugin(
             stage=2,
@@ -87,7 +88,7 @@ def main():
     booster = Booster(plugin=plugin)
 
     # ======================================================
-    # 3. build dataset and dataloader
+    # step: 3. build dataset and dataloader
     # ======================================================
     dataset = DatasetFromCSV(
         cfg.data_path,
@@ -129,7 +130,8 @@ def main():
     input_size = (cfg.num_frames, *cfg.image_size)
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
+    text_encoder = build_module(
+        cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
     model = build_module(
         cfg.model,
         MODELS,
@@ -189,9 +191,12 @@ def main():
     # 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
-        start_epoch, start_step, sampler_start_idx = load(booster, model, ema, optimizer, lr_scheduler, cfg.load)
-        logger.info(f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
-    logger.info(f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
+        start_epoch, start_step, sampler_start_idx = load(
+            booster, model, ema, optimizer, lr_scheduler, cfg.load)
+        logger.info(
+            f"Loaded checkpoint {cfg.load} at epoch {start_epoch} step {start_step}")
+    logger.info(
+        f"Training for {cfg.epochs} epochs with {num_steps_per_epoch} steps per epoch")
 
     dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
@@ -221,7 +226,8 @@ def main():
                     model_args = text_encoder.encode(y)
 
                 # Diffusion
-                t = torch.randint(0, scheduler.num_timesteps, (x.shape[0],), device=device)
+                t = torch.randint(0, scheduler.num_timesteps,
+                                  (x.shape[0],), device=device)
                 loss_dict = scheduler.training_losses(model, x, t, model_args)
 
                 # Backward & update
@@ -242,7 +248,8 @@ def main():
                 # Log to tensorboard
                 if coordinator.is_master() and (global_step + 1) % cfg.log_every == 0:
                     avg_loss = running_loss / log_step
-                    pbar.set_postfix({"loss": avg_loss, "step": step, "global_step": global_step})
+                    pbar.set_postfix(
+                        {"loss": avg_loss, "step": step, "global_step": global_step})
                     running_loss = 0
                     log_step = 0
                     writer.add_scalar("loss", loss.item(), global_step)
