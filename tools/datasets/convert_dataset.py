@@ -51,9 +51,32 @@ def process_ucf101(root, split):
     print(f"Saved {len(samples)} samples to {output}.")
 
 
+def process_dyna_mnist(root):
+    """
+      note: 
+      python3 convert_dataset.py dyna_mnist ~/Downloads/data/DynaMNIST_20240321
+    """
+    root = os.path.expanduser(root)
+    video_lists = get_filelist(root)
+    # print(video_lists[0])
+    nums = [int(x.split("/")[-2]) for x in video_lists]
+    # print(set(classes))
+    words = ["Zero", "One", "Two", "Three", "Four",
+             "Five", "Six", "Seven", "Eight", "Nine"]
+    classes = [words[x] for x in nums]
+    samples = list(zip(video_lists, classes))
+    output = f"DynaMNIST.csv"
+    with open(output, "w") as f:
+        writer = csv.writer(f)
+        writer.writerows(samples)
+
+    print(f"Saved {len(samples)} samples to {output}.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("dataset", type=str, choices=["imagenet", "ucf101"])
+    parser.add_argument("dataset", type=str, choices=[
+                        "imagenet", "ucf101", "dyna_mnist"])
     parser.add_argument("root", type=str)
     parser.add_argument("--split", type=str, default="train")
     args = parser.parse_args()
@@ -62,5 +85,7 @@ if __name__ == "__main__":
         process_imagenet(args.root, args.split)
     elif args.dataset == "ucf101":
         process_ucf101(args.root, args.split)
+    elif args.dataset == "dyna_mnist":
+        process_dyna_mnist(args.root)
     else:
         raise ValueError("Invalid dataset")
