@@ -1,4 +1,5 @@
-colossalai
+torch>=1.12
+colossalai 
 accelerate
 diffusers
 ftfy
@@ -11,3 +12,5 @@ timm
 tqdm
 transformers
 wandb
+xformers==0.0.130
+triton
