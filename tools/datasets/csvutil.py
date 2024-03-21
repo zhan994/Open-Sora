@@ -26,6 +26,7 @@ def get_video_length(path):
 
 def main(args):
     input_path = args.input
+    # step: 1 generate output path
     output_path = args.output
     if output_path is None:
         name = os.path.basename(input_path)
@@ -49,6 +50,7 @@ def main(args):
         data = list(reader)
     print("Number of videos before filtering:", len(data))
 
+    # step: 2 generate new data csv
     data_new = []
     for i, row in tqdm(enumerate(data)):
         path = row[0]
@@ -63,7 +65,7 @@ def main(args):
         if args.remove_caption_prefix:
             for prefix in PREFIX:
                 if caption.startswith(prefix):
-                    caption = caption[len(prefix) :].strip()
+                    caption = caption[len(prefix):].strip()
                     if caption[0].islower():
                         caption = caption[0].upper() + caption[1:]
                     row[1] = caption

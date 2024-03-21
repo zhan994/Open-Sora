@@ -17,7 +17,8 @@ def get_transforms_video(resolution=256):
             video_transforms.ToTensorVideo(),  # TCHW
             video_transforms.RandomHorizontalFlipVideo(),
             video_transforms.UCFCenterCropVideo(resolution),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[
+                                 0.5, 0.5, 0.5], inplace=True),
         ]
     )
     return transform_video
@@ -26,10 +27,12 @@ def get_transforms_video(resolution=256):
 def get_transforms_image(image_size=256):
     transform = transforms.Compose(
         [
-            transforms.Lambda(lambda pil_image: center_crop_arr(pil_image, image_size)),
+            transforms.Lambda(
+                lambda pil_image: center_crop_arr(pil_image, image_size)),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[
+                                 0.5, 0.5, 0.5], inplace=True),
         ]
     )
     return transform
@@ -68,7 +71,8 @@ class DatasetFromCSV(torch.utils.data.Dataset):
 
         self.num_frames = num_frames
         self.frame_interval = frame_interval
-        self.temporal_sample = video_transforms.TemporalRandomCrop(num_frames * frame_interval)
+        self.temporal_sample = video_transforms.TemporalRandomCrop(
+            num_frames * frame_interval)
         self.root = root
 
     def getitem(self, index):
@@ -79,7 +83,8 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         text = sample[1]
 
         if self.is_video:
-            vframes, aframes, info = torchvision.io.read_video(filename=path, pts_unit="sec", output_format="TCHW")
+            vframes, aframes, info = torchvision.io.read_video(
+                filename=path, pts_unit="sec", output_format="TCHW")
             total_frames = len(vframes)
 
             # Sampling video frames
@@ -87,7 +92,8 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             assert (
                 end_frame_ind - start_frame_ind >= self.num_frames
             ), f"{path} with index {index} has not enough frames."
-            frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, self.num_frames, dtype=int)
+            frame_indice = np.linspace(
+                start_frame_ind, end_frame_ind - 1, self.num_frames, dtype=int)
 
             video = vframes[frame_indice]
             video = self.transform(video)  # T C H W

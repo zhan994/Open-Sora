@@ -19,6 +19,7 @@ import numbers
 import random
 
 import torch
+from PIL import Image
 
 
 def _is_tensor_video_clip(clip):
@@ -37,15 +38,17 @@ def center_crop_arr(pil_image, image_size):
     https://github.com/openai/guided-diffusion/blob/8fb3ad9197f16bbc40620447b2742e13458d2831/guided_diffusion/image_datasets.py#L126
     """
     while min(*pil_image.size) >= 2 * image_size:
-        pil_image = pil_image.resize(tuple(x // 2 for x in pil_image.size), resample=Image.BOX)
+        pil_image = pil_image.resize(
+            tuple(x // 2 for x in pil_image.size), resample=Image.BOX)
 
     scale = image_size / min(*pil_image.size)
-    pil_image = pil_image.resize(tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC)
+    pil_image = pil_image.resize(tuple(round(x * scale)
+                                 for x in pil_image.size), resample=Image.BICUBIC)
 
     arr = np.array(pil_image)
     crop_y = (arr.shape[0] - image_size) // 2
     crop_x = (arr.shape[1] - image_size) // 2
-    return Image.fromarray(arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size])
+    return Image.fromarray(arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size])
 
 
 def crop(clip, i, j, h, w):
@@ -55,18 +58,20 @@ def crop(clip, i, j, h, w):
     """
     if len(clip.size()) != 4:
         raise ValueError("clip should be a 4D tensor")
-    return clip[..., i : i + h, j : j + w]
+    return clip[..., i: i + h, j: j + w]
 
 
 def resize(clip, target_size, interpolation_mode):
     if len(target_size) != 2:
-        raise ValueError(f"target size should be tuple (height, width), instead got {target_size}")
+        raise ValueError(
+            f"target size should be tuple (height, width), instead got {target_size}")
     return torch.nn.functional.interpolate(clip, size=target_size, mode=interpolation_mode, align_corners=False)
 
 
 def resize_scale(clip, target_size, interpolation_mode):
     if len(target_size) != 2:
-        raise ValueError(f"target size should be tuple (height, width), instead got {target_size}")
+        raise ValueError(
+            f"target size should be tuple (height, width), instead got {target_size}")
     H, W = clip.size(-2), clip.size(-1)
     scale_ = target_size[0] / min(H, W)
     return torch.nn.functional.interpolate(clip, scale_factor=scale_, mode=interpolation_mode, align_corners=False)
@@ -151,7 +156,8 @@ def to_tensor(clip):
     """
     _is_tensor_video_clip(clip)
     if not clip.dtype == torch.uint8:
-        raise TypeError("clip tensor should have data type uint8. Got %s" % str(clip.dtype))
+        raise TypeError(
+            "clip tensor should have data type uint8. Got %s" % str(clip.dtype))
     # return clip.float().permute(3, 0, 1, 2) / 255.0
     return clip.float() / 255.0
 
@@ -211,7 +217,8 @@ class RandomCropVideo:
         th, tw = self.size
 
         if h < th or w < tw:
-            raise ValueError(f"Required crop size {(th, tw)} is larger than input image size {(h, w)}")
+            raise ValueError(
+                f"Required crop size {(th, tw)} is larger than input image size {(h, w)}")
 
         if w == tw and h == th:
             return 0, 0, h, w
@@ -238,7 +245,8 @@ class CenterCropResizeVideo:
     ):
         if isinstance(size, tuple):
             if len(size) != 2:
-                raise ValueError(f"size should be tuple (height, width), instead got {size}")
+                raise ValueError(
+                    f"size should be tuple (height, width), instead got {size}")
             self.size = size
         else:
             self.size = (size, size)
@@ -276,7 +284,8 @@ class UCFCenterCropVideo:
     ):
         if isinstance(size, tuple):
             if len(size) != 2:
-                raise ValueError(f"size should be tuple (height, width), instead got {size}")
+                raise ValueError(
+                    f"size should be tuple (height, width), instead got {size}")
             self.size = size
         else:
             self.size = (size, size)
@@ -291,7 +300,8 @@ class UCFCenterCropVideo:
             torch.tensor: scale resized / center cropped video clip.
                 size is (T, C, crop_size, crop_size)
         """
-        clip_resize = resize_scale(clip=clip, target_size=self.size, interpolation_mode=self.interpolation_mode)
+        clip_resize = resize_scale(
+            clip=clip, target_size=self.size, interpolation_mode=self.interpolation_mode)
         clip_center_crop = center_crop(clip_resize, self.size)
         return clip_center_crop
 
@@ -311,7 +321,8 @@ class KineticsRandomCropResizeVideo:
     ):
         if isinstance(size, tuple):
             if len(size) != 2:
-                raise ValueError(f"size should be tuple (height, width), instead got {size}")
+                raise ValueError(
+                    f"size should be tuple (height, width), instead got {size}")
             self.size = size
         else:
             self.size = (size, size)
@@ -320,7 +331,8 @@ class KineticsRandomCropResizeVideo:
 
     def __call__(self, clip):
         clip_random_crop = random_shift_crop(clip)
-        clip_resize = resize(clip_random_crop, self.size, self.interpolation_mode)
+        clip_resize = resize(clip_random_crop, self.size,
+                             self.interpolation_mode)
         return clip_resize
 
 
@@ -332,7 +344,8 @@ class CenterCropVideo:
     ):
         if isinstance(size, tuple):
             if len(size) != 2:
-                raise ValueError(f"size should be tuple (height, width), instead got {size}")
+                raise ValueError(
+                    f"size should be tuple (height, width), instead got {size}")
             self.size = size
         else:
             self.size = (size, size)
@@ -454,7 +467,8 @@ if __name__ == "__main__":
     from torchvision import transforms
     from torchvision.utils import save_image
 
-    vframes, aframes, info = io.read_video(filename="./v_Archery_g01_c03.avi", pts_unit="sec", output_format="TCHW")
+    vframes, aframes, info = io.read_video(
+        filename="./v_Archery_g01_c03.avi", pts_unit="sec", output_format="TCHW")
 
     trans = transforms.Compose(
         [
@@ -462,7 +476,8 @@ if __name__ == "__main__":
             RandomHorizontalFlipVideo(),
             UCFCenterCropVideo(512),
             # NormalizeVideo(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[
+                                 0.5, 0.5, 0.5], inplace=True),
         ]
     )
 
@@ -478,7 +493,8 @@ if __name__ == "__main__":
     # print(start_frame_ind)
     # print(end_frame_ind)
     assert end_frame_ind - start_frame_ind >= target_video_len
-    frame_indice = np.linspace(start_frame_ind, end_frame_ind - 1, target_video_len, dtype=int)
+    frame_indice = np.linspace(
+        start_frame_ind, end_frame_ind - 1, target_video_len, dtype=int)
     print(frame_indice)
 
     select_vframes = vframes[frame_indice]
@@ -489,11 +505,13 @@ if __name__ == "__main__":
     print(select_vframes_trans.shape)
     print(select_vframes_trans.dtype)
 
-    select_vframes_trans_int = ((select_vframes_trans * 0.5 + 0.5) * 255).to(dtype=torch.uint8)
+    select_vframes_trans_int = (
+        (select_vframes_trans * 0.5 + 0.5) * 255).to(dtype=torch.uint8)
     print(select_vframes_trans_int.dtype)
     print(select_vframes_trans_int.permute(0, 2, 3, 1).shape)
 
-    io.write_video("./test.avi", select_vframes_trans_int.permute(0, 2, 3, 1), fps=8)
+    io.write_video(
+        "./test.avi", select_vframes_trans_int.permute(0, 2, 3, 1), fps=8)
 
     for i in range(target_video_len):
         save_image(
