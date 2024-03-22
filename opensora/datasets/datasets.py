@@ -15,7 +15,7 @@ def get_transforms_video(resolution=256):
     transform_video = transforms.Compose(
         [
             video_transforms.ToTensorVideo(),  # TCHW
-            video_transforms.RandomHorizontalFlipVideo(),
+            # video_transforms.RandomHorizontalFlipVideo(),
             video_transforms.UCFCenterCropVideo(resolution),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[
                                  0.5, 0.5, 0.5], inplace=True),
