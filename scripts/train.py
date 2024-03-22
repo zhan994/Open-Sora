@@ -124,9 +124,9 @@ def main():
     logger.info(f"Total batch size: {total_batch_size}")
 
     # ======================================================
-    # 4. build model
+    # step: 4. build model
     # ======================================================
-    # 4.1. build model
+    # step: 4.1. build model
     input_size = (cfg.num_frames, *cfg.image_size)
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
@@ -146,25 +146,25 @@ def main():
         f"Trainable model params: {format_numel_str(model_numel_trainable)}, Total model params: {format_numel_str(model_numel)}"
     )
 
-    # 4.2. create ema
+    # step: 4.2. create ema
     ema = deepcopy(model).to(torch.float32).to(device)
     requires_grad(ema, False)
     ema_shape_dict = record_model_param_shape(ema)
 
-    # 4.3. move to device
+    # step: 4.3. move to device
     vae = vae.to(device, dtype)
     model = model.to(device, dtype)
 
-    # 4.4. build scheduler
+    # step: 4.4. build scheduler
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
-    # 4.5. setup optimizer
+    # step: 4.5. setup optimizer
     optimizer = HybridAdam(
         filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
     )
     lr_scheduler = None
 
-    # 4.6. prepare for training
+    # step: 4.6. prepare for training
     if cfg.grad_checkpoint:
         set_grad_checkpoint(model)
     model.train()
@@ -172,7 +172,7 @@ def main():
     ema.eval()
 
     # =======================================================
-    # 5. boost model for distributed training with colossalai
+    # step: 5. boost model for distributed training with colossalai
     # =======================================================
     torch.set_default_dtype(dtype)
     model, optimizer, _, dataloader, lr_scheduler = booster.boost(
@@ -183,12 +183,12 @@ def main():
     logger.info("Boost model for distributed training")
 
     # =======================================================
-    # 6. training loop
+    # step: 6. training loop
     # =======================================================
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
 
-    # 6.1. resume training
+    # step: 6.1. resume training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
         start_epoch, start_step, sampler_start_idx = load(
@@ -201,7 +201,7 @@ def main():
     dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
 
-    # 6.2. training loop
+    # step: 6.2. training loop
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)

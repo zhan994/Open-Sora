@@ -6,11 +6,11 @@ ftfy
 gdown
 mmengine
 pre-commit
-pyav
+av
 tensorboard
 timm
 tqdm
 transformers
 wandb
-xformers==0.0.130
+xformers==0.0.13
 triton

@@ -60,6 +60,7 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             reader = csv.reader(f)
             self.samples = list(reader)
 
+        # step: 1 judge if video
         ext = self.samples[0][0].split(".")[-1]
         if ext.lower() in ("mp4", "avi", "mov", "mkv"):
             self.is_video = True
@@ -67,8 +68,8 @@ class DatasetFromCSV(torch.utils.data.Dataset):
             assert f".{ext.lower()}" in IMG_EXTENSIONS, f"Unsupported file format: {ext}"
             self.is_video = False
 
+        # step: 2 transform & clip frames
         self.transform = transform
-
         self.num_frames = num_frames
         self.frame_interval = frame_interval
         self.temporal_sample = video_transforms.TemporalRandomCrop(
@@ -76,12 +77,14 @@ class DatasetFromCSV(torch.utils.data.Dataset):
         self.root = root
 
     def getitem(self, index):
+        # step: 1 get sample
         sample = self.samples[index]
         path = sample[0]
         if self.root:
             path = os.path.join(self.root, path)
         text = sample[1]
 
+        # step: 2 read video
         if self.is_video:
             vframes, aframes, info = torchvision.io.read_video(
                 filename=path, pts_unit="sec", output_format="TCHW")

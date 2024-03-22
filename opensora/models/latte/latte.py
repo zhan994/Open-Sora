@@ -43,7 +43,8 @@ class Latte(DiT):
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = rearrange(x, "b (t s) d -> b t s d",
+                      t=self.num_temporal, s=self.num_spatial)
         x = x + self.pos_embed_spatial
         x = rearrange(x, "b t s d -> b (t s) d")
 
@@ -52,18 +53,22 @@ class Latte(DiT):
         if self.use_text_encoder:
             y = y.squeeze(1).squeeze(1)
         condition = t + y
-        condition_spatial = repeat(condition, "b d -> (b t) d", t=self.num_temporal)
-        condition_temporal = repeat(condition, "b d -> (b s) d", s=self.num_spatial)
+        condition_spatial = repeat(
+            condition, "b d -> (b t) d", t=self.num_temporal)
+        condition_temporal = repeat(
+            condition, "b d -> (b s) d", s=self.num_spatial)
 
         # blocks
         for i, block in enumerate(self.blocks):
             if i % 2 == 0:
                 # spatial
-                x = rearrange(x, "b (t s) d -> (b t) s d", t=self.num_temporal, s=self.num_spatial)
+                x = rearrange(x, "b (t s) d -> (b t) s d",
+                              t=self.num_temporal, s=self.num_spatial)
                 c = condition_spatial
             else:
                 # temporal
-                x = rearrange(x, "b (t s) d -> (b s) t d", t=self.num_temporal, s=self.num_spatial)
+                x = rearrange(x, "b (t s) d -> (b s) t d",
+                              t=self.num_temporal, s=self.num_spatial)
                 c = condition_temporal
                 if i == 1:
                     x = x + self.pos_embed_temporal
@@ -71,12 +76,15 @@ class Latte(DiT):
             x = auto_grad_checkpoint(block, x, c)  # (B, N, D)
 
             if i % 2 == 0:
-                x = rearrange(x, "(b t) s d -> b (t s) d", t=self.num_temporal, s=self.num_spatial)
+                x = rearrange(x, "(b t) s d -> b (t s) d",
+                              t=self.num_temporal, s=self.num_spatial)
             else:
-                x = rearrange(x, "(b s) t d -> b (t s) d", t=self.num_temporal, s=self.num_spatial)
+                x = rearrange(x, "(b s) t d -> b (t s) d",
+                              t=self.num_temporal, s=self.num_spatial)
 
         # final process
-        x = self.final_layer(x, condition)  # (B, N, num_patches * out_channels)
+        # (B, N, num_patches * out_channels)
+        x = self.final_layer(x, condition)
         x = self.unpatchify(x)  # (B, out_channels, T, H, W)
 
         # cast to float32 for better accuracy
@@ -105,6 +113,19 @@ def Latte_XL_2x2(from_pretrained=None, **kwargs):
         hidden_size=1152,
         patch_size=(2, 2, 2),
         num_heads=16,
+        **kwargs,
+    )
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+@MODELS.register_module("Latte-S/2")
+def Latte_S_2(from_pretrained=None, **kwargs):
+    model = Latte(
+        depth=12,
+        hidden_size=384,
+        patch_size=(1, 2, 2),
+        num_heads=6,
         **kwargs,
     )
     if from_pretrained is not None:

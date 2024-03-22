@@ -53,21 +53,30 @@ class DiTBlock(nn.Module):
         self.enable_flashattn = enable_flashattn
         mlp_hidden_dim = int(hidden_size * mlp_ratio)
 
-        self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.norm1 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = Attention(
             hidden_size,
             num_heads=num_heads,
             qkv_bias=True,
             enable_flashattn=enable_flashattn,
         )
-        self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
-        self.mlp = Mlp(in_features=hidden_size, hidden_features=mlp_hidden_dim, act_layer=approx_gelu, drop=0)
-        self.adaLN_modulation = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
+        self.norm2 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.mlp = Mlp(in_features=hidden_size,
+                       hidden_features=mlp_hidden_dim, act_layer=approx_gelu, drop=0)
+        self.adaLN_modulation = nn.Sequential(
+            nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
 
     def forward(self, x, c):
-        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(c).chunk(6, dim=1)
-        x = x + gate_msa.unsqueeze(1) * self.attn(modulate(self.norm1, x, shift_msa, scale_msa))
-        x = x + gate_mlp.unsqueeze(1) * self.mlp(modulate(self.norm2, x, shift_mlp, scale_mlp))
+        shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.adaLN_modulation(
+            c).chunk(6, dim=1)
+        x = x + \
+            gate_msa.unsqueeze(
+                1) * self.attn(modulate(self.norm1, x, shift_msa, scale_msa))
+        x = x + \
+            gate_mlp.unsqueeze(
+                1) * self.mlp(modulate(self.norm2, x, shift_mlp, scale_mlp))
         return x
 
 
@@ -103,7 +112,8 @@ class DiT(nn.Module):
         self.hidden_size = hidden_size
         self.patch_size = patch_size
         self.input_size = input_size
-        num_patches = np.prod([input_size[i] // patch_size[i] for i in range(3)])
+        num_patches = np.prod([input_size[i] // patch_size[i]
+                              for i in range(3)])
         self.num_patches = num_patches
         self.num_temporal = input_size[0] // patch_size[0]
         self.num_spatial = num_patches // self.num_temporal
@@ -120,12 +130,15 @@ class DiT(nn.Module):
         self.depth = depth
 
         self.register_buffer("pos_embed_spatial", self.get_spatial_pos_embed())
-        self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
+        self.register_buffer("pos_embed_temporal",
+                             self.get_temporal_pos_embed())
 
-        self.x_embedder = PatchEmbed3D(patch_size, in_channels, embed_dim=hidden_size)
+        self.x_embedder = PatchEmbed3D(
+            patch_size, in_channels, embed_dim=hidden_size)
         if not self.use_text_encoder:
             num_classes = int(condition.split("_")[-1])
-            self.y_embedder = LabelEmbedder(num_classes, hidden_size, class_dropout_prob)
+            self.y_embedder = LabelEmbedder(
+                num_classes, hidden_size, class_dropout_prob)
         else:
             self.y_embedder = CaptionEmbedder(
                 in_channels=caption_channels,
@@ -147,7 +160,8 @@ class DiT(nn.Module):
                 for _ in range(depth)
             ]
         )
-        self.final_layer = FinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = FinalLayer(
+            hidden_size, np.prod(self.patch_size), self.out_channels)
 
         self.initialize_weights()
         self.enable_flashattn = enable_flashattn
@@ -158,7 +172,8 @@ class DiT(nn.Module):
             self.hidden_size,
             self.input_size[1] // self.patch_size[1],
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def get_temporal_pos_embed(self):
@@ -166,7 +181,8 @@ class DiT(nn.Module):
             self.hidden_size,
             self.input_size[0] // self.patch_size[0],
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def unpatchify(self, x):
@@ -191,7 +207,8 @@ class DiT(nn.Module):
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = rearrange(x, "b (t s) d -> b t s d",
+                      t=self.num_temporal, s=self.num_spatial)
         x = x + self.pos_embed_spatial
         if not self.no_temporal_pos_emb:
             x = rearrange(x, "b t s d -> b s t d")
@@ -212,7 +229,8 @@ class DiT(nn.Module):
             x = auto_grad_checkpoint(block, x, c)  # (B, N, D)
 
         # final process
-        x = self.final_layer(x, condition)  # (B, N, num_patches * out_channels)
+        # (B, N, num_patches * out_channels)
+        x = self.final_layer(x, condition)
         x = self.unpatchify(x)  # (B, out_channels, T, H, W)
 
         # cast to float32 for better accuracy

@@ -26,8 +26,9 @@ class VideoAutoencoderKL(nn.Module):
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
-                x_bs = x[i : i + bs]
-                x_bs = self.module.encode(x_bs).latent_dist.sample().mul_(0.18215)
+                x_bs = x[i: i + bs]
+                x_bs = self.module.encode(
+                    x_bs).latent_dist.sample().mul_(0.18215)
                 x_out.append(x_bs)
             x = torch.cat(x_out, dim=0)
         x = rearrange(x, "(B T) C H W -> B C T H W", B=B)
@@ -43,7 +44,7 @@ class VideoAutoencoderKL(nn.Module):
             bs = self.micro_batch_size
             x_out = []
             for i in range(0, x.shape[0], bs):
-                x_bs = x[i : i + bs]
+                x_bs = x[i: i + bs]
                 x_bs = self.module.decode(x_bs / 0.18215).sample
                 x_out.append(x_bs)
             x = torch.cat(x_out, dim=0)
@@ -61,7 +62,8 @@ class VideoAutoencoderKL(nn.Module):
 class VideoAutoencoderKLTemporalDecoder(nn.Module):
     def __init__(self, from_pretrained=None):
         super().__init__()
-        self.module = AutoencoderKLTemporalDecoder.from_pretrained(from_pretrained)
+        self.module = AutoencoderKLTemporalDecoder.from_pretrained(
+            from_pretrained)
         self.out_channels = self.module.config.latent_channels
         self.patch_size = (1, 8, 8)
 

@@ -77,7 +77,8 @@ class PixArtBlock(nn.Module):
             self.attn_cls = Attention
             self.mha_cls = MultiHeadCrossAttention
 
-        self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.norm1 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = self.attn_cls(
             hidden_size,
             num_heads=num_heads,
@@ -85,12 +86,15 @@ class PixArtBlock(nn.Module):
             enable_flashattn=enable_flashattn,
         )
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
-        self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.norm2 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.mlp = Mlp(
             in_features=hidden_size, hidden_features=int(hidden_size * mlp_ratio), act_layer=approx_gelu, drop=0
         )
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
-        self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
+        self.drop_path = DropPath(
+            drop_path) if drop_path > 0.0 else nn.Identity()
+        self.scale_shift_table = nn.Parameter(
+            torch.randn(6, hidden_size) / hidden_size**0.5)
 
     def forward(self, x, y, t, mask=None):
         B, N, C = x.shape
@@ -98,9 +102,12 @@ class PixArtBlock(nn.Module):
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
             self.scale_shift_table[None] + t.reshape(B, 6, -1)
         ).chunk(6, dim=1)
-        x = x + self.drop_path(gate_msa * self.attn(t2i_modulate(self.norm1(x), shift_msa, scale_msa)).reshape(B, N, C))
+        x = x + self.drop_path(gate_msa * self.attn(t2i_modulate(
+            self.norm1(x), shift_msa, scale_msa)).reshape(B, N, C))
         x = x + self.cross_attn(x, y, mask)
-        x = x + self.drop_path(gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
+        x = x + \
+            self.drop_path(
+                gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
 
         return x
 
@@ -140,7 +147,8 @@ class PixArt(nn.Module):
         self.hidden_size = hidden_size
         self.patch_size = patch_size
         self.input_size = input_size
-        num_patches = np.prod([input_size[i] // patch_size[i] for i in range(3)])
+        num_patches = np.prod([input_size[i] // patch_size[i]
+                              for i in range(3)])
         self.num_patches = num_patches
         self.num_temporal = input_size[0] // patch_size[0]
         self.num_spatial = num_patches // self.num_temporal
@@ -157,7 +165,8 @@ class PixArt(nn.Module):
 
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
+        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(
+            hidden_size, 6 * hidden_size, bias=True))
         self.y_embedder = CaptionEmbedder(
             in_channels=caption_channels,
             hidden_size=hidden_size,
@@ -167,9 +176,11 @@ class PixArt(nn.Module):
         )
 
         self.register_buffer("pos_embed", self.get_spatial_pos_embed())
-        self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
+        self.register_buffer("pos_embed_temporal",
+                             self.get_temporal_pos_embed())
 
-        drop_path = [x.item() for x in torch.linspace(0, drop_path, depth)]  # stochastic depth decay rule
+        drop_path = [x.item() for x in torch.linspace(
+            0, drop_path, depth)]  # stochastic depth decay rule
         self.blocks = nn.ModuleList(
             [
                 PixArtBlock(
@@ -183,7 +194,8 @@ class PixArt(nn.Module):
                 for i in range(depth)
             ]
         )
-        self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = T2IFinalLayer(
+            hidden_size, np.prod(self.patch_size), self.out_channels)
 
         self.initialize_weights()
         if freeze is not None:
@@ -204,7 +216,8 @@ class PixArt(nn.Module):
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = rearrange(x, "b (t s) d -> b t s d",
+                      t=self.num_temporal, s=self.num_spatial)
         x = x + self.pos_embed
         if not self.no_temporal_pos_emb:
             x = rearrange(x, "b t s d -> b s t d")
@@ -220,7 +233,8 @@ class PixArt(nn.Module):
             if mask.shape[0] != y.shape[0]:
                 mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
             mask = mask.squeeze(1).squeeze(1)
-            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
+            y = y.squeeze(1).masked_select(
+                mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
             y_lens = mask.sum(dim=1).tolist()
         else:
             y_lens = [y.shape[2]] * y.shape[0]
@@ -253,11 +267,13 @@ class PixArt(nn.Module):
             grid_size = self.input_size[1:]
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
-            (grid_size[0] // self.patch_size[1], grid_size[1] // self.patch_size[2]),
+            (grid_size[0] // self.patch_size[1],
+             grid_size[1] // self.patch_size[2]),
             scale=self.space_scale,
             base_size=self.base_size,
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def get_temporal_pos_embed(self):
@@ -266,7 +282,8 @@ class PixArt(nn.Module):
             self.input_size[0] // self.patch_size[0],
             scale=self.time_scale,
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def freeze_text(self):
@@ -329,11 +346,13 @@ class PixArtMS(PixArt):
 
         c_size = data_info["hw"]
         ar = data_info["ar"]
-        pos_embed = self.get_spatial_pos_embed((x.shape[-2], x.shape[-1])).to(x.dtype)
+        pos_embed = self.get_spatial_pos_embed(
+            (x.shape[-2], x.shape[-1])).to(x.dtype)
 
         # embedding
         x = self.x_embedder(x)  # (B, N, D)
-        x = rearrange(x, "b (t s) d -> b t s d", t=self.num_temporal, s=self.num_spatial)
+        x = rearrange(x, "b (t s) d -> b t s d",
+                      t=self.num_temporal, s=self.num_spatial)
         x = x + pos_embed.to(x.device)
         if not self.no_temporal_pos_emb:
             x = rearrange(x, "b t s d -> b s t d")
@@ -354,7 +373,8 @@ class PixArtMS(PixArt):
             if mask.shape[0] != y.shape[0]:
                 mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
             mask = mask.squeeze(1).squeeze(1)
-            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
+            y = y.squeeze(1).masked_select(
+                mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
             y_lens = mask.sum(dim=1).tolist()
         else:
             y_lens = [y.shape[2]] * y.shape[0]
@@ -375,7 +395,8 @@ class PixArtMS(PixArt):
 
 @MODELS.register_module("PixArt-XL/2")
 def PixArt_XL_2(from_pretrained=None, **kwargs):
-    model = PixArt(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    model = PixArt(depth=28, hidden_size=1152,
+                   patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
@@ -383,7 +404,8 @@ def PixArt_XL_2(from_pretrained=None, **kwargs):
 
 @MODELS.register_module("PixArtMS-XL/2")
 def PixArtMS_XL_2(from_pretrained=None, **kwargs):
-    model = PixArtMS(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    model = PixArtMS(depth=28, hidden_size=1152,
+                     patch_size=(1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model

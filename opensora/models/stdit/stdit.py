@@ -18,6 +18,7 @@ from opensora.models.layers.blocks import (
     SeqParallelMultiHeadCrossAttention,
     T2IFinalLayer,
     TimestepEmbedder,
+    LabelEmbedder,
     approx_gelu,
     get_1d_sincos_pos_embed,
     get_2d_sincos_pos_embed,
