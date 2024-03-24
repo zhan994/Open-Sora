@@ -33,7 +33,7 @@ from opensora.utils.train_utils import update_ema
 
 def main():
     # ======================================================
-    # step: 1. args & cfg
+    # step: 1. 解析args和cfg进行合并， 创建exp目录并保存cfg
     # ======================================================
     cfg = parse_configs(training=True)
     print(cfg)
@@ -41,7 +41,7 @@ def main():
     save_training_config(cfg._cfg_dict, exp_dir)
 
     # ======================================================
-    # step: 2. runtime variables & colossalai launch
+    # step: 2. 检查cuda和dtype， 初始化ColossalAI的环境
     # ======================================================
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     assert cfg.dtype in [

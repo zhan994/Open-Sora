@@ -8,10 +8,13 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 def parse_args(training=False):
+    """
+      解析配置文件
+    """
     parser = argparse.ArgumentParser()
 
-    # model config
-    parser.add_argument("config", help="model config file path")
+    # model config from file
+    parser.add_argument("config", help="model config file path") 
 
     parser.add_argument("--seed", default=42, type=int, help="generation seed")
     parser.add_argument("--ckpt-path", type=str, help="path to model ckpt; will overwrite cfg.ckpt_path if specified")
@@ -38,6 +41,9 @@ def parse_args(training=False):
 
 
 def merge_args(cfg, args, training=False):
+    """
+      合并所有配置 file + argparse
+    """
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
@@ -49,6 +55,8 @@ def merge_args(cfg, args, training=False):
 
     if "multi_resolution" not in cfg:
         cfg["multi_resolution"] = False
+
+    # 对于 args 中值不为 None 的 Key,在 cfg 中进行添加更新
     for k, v in vars(args).items():
         if k in cfg and v is not None:
             cfg[k] = v
@@ -57,6 +65,9 @@ def merge_args(cfg, args, training=False):
 
 
 def parse_configs(training=False):
+    """
+      解析配置文件
+    """
     args = parse_args(training)
     cfg = Config.fromfile(args.config)
     cfg = merge_args(cfg, args, training)
@@ -86,11 +97,17 @@ def create_experiment_workspace(cfg):
 
 
 def save_training_config(cfg, experiment_dir):
+    """
+      save training cfg
+    """
     with open(f"{experiment_dir}/config.txt", "w") as f:
         json.dump(cfg, f, indent=4)
 
 
 def create_tensorboard_writer(exp_dir):
+    """
+      init tensorboard
+    """
     tensorboard_dir = f"{exp_dir}/tensorboard"
     os.makedirs(tensorboard_dir, exist_ok=True)
     writer = SummaryWriter(tensorboard_dir)
