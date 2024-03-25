@@ -30,6 +30,8 @@ from opensora.utils.config_utils import (
 from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.train_utils import update_ema
 
+import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 def main():
     # ======================================================

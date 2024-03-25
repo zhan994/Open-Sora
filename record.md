@@ -29,7 +29,7 @@ python3 tools/datasets/convert_dataset.py dyna_mnist ~/Downloads/data/DynaMNIST_
 使用`4x32x32-class`的配置训练`DynaMNIST`，如下：
 
 ```bash
-torchrun --nnodes=1 --nproc_per_node=1 scripts/train.py configs/dyna_mnist/train/4x32x32-class.py --data-path YOUR_CSV_PATH
+torchrun --nproc_per_node=1 --nnodes=1 scripts/train.py configs/dyna_mnist/train/4x32x32-class.py --data-path YOUR_CSV_PATH
 ```
 
 

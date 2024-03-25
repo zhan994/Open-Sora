@@ -103,7 +103,9 @@ class PatchEmbed3D(nn.Module):
         if D % self.patch_size[0] != 0:
             x = F.pad(x, (0, 0, 0, 0, 0, self.patch_size[0] - D % self.patch_size[0]))
 
+        # print("before proj", x.shape) # B 4 T H W 
         x = self.proj(x)  # (B C T H W) C=hidden_size
+        # print(x.shape)
         if self.norm is not None:
             D, Wh, Ww = x.size(2), x.size(3), x.size(4)
             x = x.flatten(2).transpose(1, 2)

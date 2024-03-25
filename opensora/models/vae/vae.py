@@ -27,7 +27,9 @@ class VideoAutoencoderKL(nn.Module):
         x = rearrange(x, "B C T H W -> (B T) C H W")
 
         if self.micro_batch_size is None:
-            x = self.module.encode(x).latent_dist.sample().mul_(0.18215)
+            # print("before vae", x.shape) # [B*T, 3, H, W]
+            x = self.module.encode(x).latent_dist.sample().mul_(0.18215) # [B*T, 4, H/8, W/8]
+            # print(x.shape)
         else:
             bs = self.micro_batch_size
             x_out = []
