@@ -6,6 +6,9 @@ from opensora.registry import MODELS
 @MODELS.register_module("classes")
 class ClassEncoder:
     def __init__(self, num_classes, model_max_length=None, device="cuda", dtype=torch.float):
+        """
+          初始化类别总数
+        """
         self.num_classes = num_classes
         self.y_embedder = None
 

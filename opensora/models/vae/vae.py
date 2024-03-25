@@ -9,6 +9,9 @@ from opensora.registry import MODELS
 @MODELS.register_module()
 class VideoAutoencoderKL(nn.Module):
     def __init__(self, from_pretrained=None, micro_batch_size=None):
+        """
+          根据from_pretrained和micro_batch_size进行初始化模型
+        """
         super().__init__()
         self.module = AutoencoderKL.from_pretrained(from_pretrained)
         self.out_channels = self.module.config.latent_channels
@@ -16,7 +19,10 @@ class VideoAutoencoderKL(nn.Module):
         self.micro_batch_size = micro_batch_size
 
     def encode(self, x):
-        # x: (B, C, T, H, W)
+        """
+          编码
+          x: (B, C, T, H, W)
+        """
         B = x.shape[0]
         x = rearrange(x, "B C T H W -> (B T) C H W")
 
@@ -35,9 +41,13 @@ class VideoAutoencoderKL(nn.Module):
         return x
 
     def decode(self, x):
-        # x: (B, C, T, H, W)
+        """
+          解码
+          x: (B, C, T, H, W)
+        """
         B = x.shape[0]
         x = rearrange(x, "B C T H W -> (B T) C H W")
+
         if self.micro_batch_size is None:
             x = self.module.decode(x / 0.18215).sample
         else:
@@ -52,6 +62,9 @@ class VideoAutoencoderKL(nn.Module):
         return x
 
     def get_latent_size(self, input_size):
+        """
+          获取latent的特征大小 [T, H/8, W/8]
+        """
         for i in range(3):
             assert input_size[i] % self.patch_size[i] == 0, "Input size must be divisible by patch size"
         input_size = [input_size[i] // self.patch_size[i] for i in range(3)]

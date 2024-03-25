@@ -44,19 +44,22 @@ def merge_args(cfg, args, training=False):
     """
       合并所有配置 file + argparse
     """
+    # step: 1 检查args中的ckpt_path
     if args.ckpt_path is not None:
         cfg.model["from_pretrained"] = args.ckpt_path
         args.ckpt_path = None
 
+    # step: 2 对于推理，检查args中的cfg_scale
     if not training:
         if args.cfg_scale is not None:
             cfg.scheduler["cfg_scale"] = args.cfg_scale
             args.cfg_scale = None
 
+    # step: 3 检查cfg中是否有多分辨率
     if "multi_resolution" not in cfg:
         cfg["multi_resolution"] = False
 
-    # 对于 args 中值不为 None 的 Key,在 cfg 中进行添加更新
+    # step: 4 对于args中值不为None的Key,在cfg中进行添加更新
     for k, v in vars(args).items():
         if k in cfg and v is not None:
             cfg[k] = v
@@ -84,11 +87,11 @@ def create_experiment_workspace(cfg):
     Returns:
         exp_dir: The path to the experiment folder.
     """
-    # Make outputs folder (holds all experiment subfolders)
+    # step: 1 Make outputs folder (holds all experiment subfolders)
     os.makedirs(cfg.outputs, exist_ok=True)
     experiment_index = len(glob(f"{cfg.outputs}/*"))
 
-    # Create an experiment folder
+    # step: 2 Create an experiment folder
     model_name = cfg.model["type"].replace("/", "-")
     exp_name = f"{experiment_index:03d}-F{cfg.num_frames}S{cfg.frame_interval}-{model_name}"
     exp_dir = f"{cfg.outputs}/{exp_name}"

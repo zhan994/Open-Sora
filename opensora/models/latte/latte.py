@@ -41,13 +41,14 @@ class Latte(DiT):
         # origin inputs should be float32, cast to specified dtype
         x = x.to(self.dtype)
 
-        # embedding
+        # step: 1 patch_embed
         x = self.x_embedder(x)  # (B, N, D)
         x = rearrange(x, "b (t s) d -> b t s d",
                       t=self.num_temporal, s=self.num_spatial)
         x = x + self.pos_embed_spatial
-        x = rearrange(x, "b t s d -> b (t s) d")
 
+        # step: 2 condtion = timestep_embed + label_embed
+        x = rearrange(x, "b t s d -> b (t s) d")
         t = self.t_embedder(t, dtype=x.dtype)  # (N, D)
         y = self.y_embedder(y, self.training)  # (N, D)
         if self.use_text_encoder:
@@ -58,15 +59,15 @@ class Latte(DiT):
         condition_temporal = repeat(
             condition, "b d -> (b s) d", s=self.num_spatial)
 
-        # blocks
+        # step: 3 blocks
         for i, block in enumerate(self.blocks):
             if i % 2 == 0:
-                # spatial
+                # step: 3.1 spatial 看作b*t个平面patch序列
                 x = rearrange(x, "b (t s) d -> (b t) s d",
                               t=self.num_temporal, s=self.num_spatial)
                 c = condition_spatial
             else:
-                # temporal
+                # step: 3.2 temporal看作 b*s个桶状patch序列
                 x = rearrange(x, "b (t s) d -> (b s) t d",
                               t=self.num_temporal, s=self.num_spatial)
                 c = condition_temporal

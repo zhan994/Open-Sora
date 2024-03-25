@@ -58,7 +58,9 @@ def t2i_modulate(x, shift, scale):
 
 
 class PatchEmbed3D(nn.Module):
-    """Video to Patch Embedding.
+    """
+    视频PatchEmbed
+    Video to Patch Embedding.
 
     Args:
         patch_size (int): Patch token size. Default: (2,4,4).
@@ -82,6 +84,7 @@ class PatchEmbed3D(nn.Module):
         self.in_chans = in_chans
         self.embed_dim = embed_dim
 
+        # 3d卷积
         self.proj = nn.Conv3d(in_chans, embed_dim, kernel_size=patch_size, stride=patch_size)
         if norm_layer is not None:
             self.norm = norm_layer(embed_dim)
@@ -91,7 +94,8 @@ class PatchEmbed3D(nn.Module):
     def forward(self, x):
         """Forward function."""
         # padding
-        _, _, D, H, W = x.size()
+        _, _, D, H, W = x.size() # (B, C, T, H, W)
+        # note: (左边填充数， 右边填充数， 上边填充数， 下边填充数， 前边填充数，后边填充数)
         if W % self.patch_size[2] != 0:
             x = F.pad(x, (0, self.patch_size[2] - W % self.patch_size[2]))
         if H % self.patch_size[1] != 0:
@@ -99,14 +103,14 @@ class PatchEmbed3D(nn.Module):
         if D % self.patch_size[0] != 0:
             x = F.pad(x, (0, 0, 0, 0, 0, self.patch_size[0] - D % self.patch_size[0]))
 
-        x = self.proj(x)  # (B C T H W)
+        x = self.proj(x)  # (B C T H W) C=hidden_size
         if self.norm is not None:
             D, Wh, Ww = x.size(2), x.size(3), x.size(4)
             x = x.flatten(2).transpose(1, 2)
             x = self.norm(x)
             x = x.transpose(1, 2).view(-1, self.embed_dim, D, Wh, Ww)
         if self.flatten:
-            x = x.flatten(2).transpose(1, 2)  # BCTHW -> BNC
+            x = x.flatten(2).transpose(1, 2)  # BCTHW -> BCN -> BNC
         return x
 
 
@@ -534,17 +538,20 @@ def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False, extra_tokens=
     return:
     pos_embed: [grid_size*grid_size, embed_dim] or [1+grid_size*grid_size, embed_dim] (w/ or w/o cls_token)
     """
+    # step: 1 判断grid_size是否为tuple
     if not isinstance(grid_size, tuple):
         grid_size = (grid_size, grid_size)
 
+    # step: 2 计算h w的索引
     grid_h = np.arange(grid_size[0], dtype=np.float32) / scale
     grid_w = np.arange(grid_size[1], dtype=np.float32) / scale
     if base_size is not None:
         grid_h *= base_size / grid_size[0]
         grid_w *= base_size / grid_size[1]
     grid = np.meshgrid(grid_w, grid_h)  # here w goes first
-    grid = np.stack(grid, axis=0)
+    grid = np.stack(grid, axis=0) # 2 h w
 
+    # step: 3 分别将h w的位置编码计算并拼接
     grid = grid.reshape([2, 1, grid_size[1], grid_size[0]])
     pos_embed = get_2d_sincos_pos_embed_from_grid(embed_dim, grid)
     if cls_token and extra_tokens > 0:
@@ -579,7 +586,7 @@ def get_1d_sincos_pos_embed_from_grid(embed_dim, pos):
     omega /= embed_dim / 2.0
     omega = 1.0 / 10000**omega  # (D/2,)
 
-    pos = pos.reshape(-1)  # (M,)
+    pos = pos.reshape(-1)  # (M,) M=H*W
     out = np.einsum("m,d->md", pos, omega)  # (M, D/2), outer product
 
     emb_sin = np.sin(out)  # (M, D/2)

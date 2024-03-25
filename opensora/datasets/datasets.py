@@ -99,7 +99,7 @@ class DatasetFromCSV(torch.utils.data.Dataset):
                 start_frame_ind, end_frame_ind - 1, self.num_frames, dtype=int)
 
             video = vframes[frame_indice]
-            video = self.transform(video)  # T C H W [4 3 32 32]
+            video = self.transform(video)  # TCHW [4 3 32 32]
         else:
             image = pil_loader(path)
             image = self.transform(image)

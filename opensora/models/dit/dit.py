@@ -106,19 +106,25 @@ class DiT(nn.Module):
         enable_layernorm_kernel=False,
     ):
         super().__init__()
+
+        # step: 1 参数
         self.learn_sigma = learn_sigma
         self.in_channels = in_channels
         self.out_channels = in_channels * 2 if learn_sigma else in_channels
         self.hidden_size = hidden_size
         self.patch_size = patch_size
         self.input_size = input_size
+        # patch个数
         num_patches = np.prod([input_size[i] // patch_size[i]
                               for i in range(3)])
         self.num_patches = num_patches
+        # temporal个数
         self.num_temporal = input_size[0] // patch_size[0]
+        # spatial个数
         self.num_spatial = num_patches // self.num_temporal
         self.num_heads = num_heads
         self.dtype = dtype
+        # 判断是否基于class做cond
         self.use_text_encoder = not condition.startswith("label")
         if enable_flashattn:
             assert dtype in [
@@ -129,10 +135,10 @@ class DiT(nn.Module):
         self.mlp_ratio = mlp_ratio
         self.depth = depth
 
-        self.register_buffer("pos_embed_spatial", self.get_spatial_pos_embed())
+        # step: 2 pos_embed, patch_embed, label_embed, timestep_embed
+        self.register_buffer("pos_embed_spatial", self.get_spatial_pos_embed()) # 1, H*W/P**2, D
         self.register_buffer("pos_embed_temporal",
-                             self.get_temporal_pos_embed())
-
+                             self.get_temporal_pos_embed()) # 1, T/P, D
         self.x_embedder = PatchEmbed3D(
             patch_size, in_channels, embed_dim=hidden_size)
         if not self.use_text_encoder:
@@ -148,6 +154,8 @@ class DiT(nn.Module):
                 token_num=1,  # pooled token
             )
         self.t_embedder = TimestepEmbedder(hidden_size)
+
+        # step: 3 blocks
         self.blocks = nn.ModuleList(
             [
                 DiTBlock(
@@ -168,19 +176,29 @@ class DiT(nn.Module):
         self.enable_layernorm_kernel = enable_layernorm_kernel
 
     def get_spatial_pos_embed(self):
+        """
+          spatial pos_embed
+        """
+        # [H/p * W/p, D]
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
             self.input_size[1] // self.patch_size[1],
         )
+        # [1, H/p * W/p, D]
         pos_embed = torch.from_numpy(
             pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def get_temporal_pos_embed(self):
+        """
+          temporal pos_embed
+        """
+        # [T/p, D]
         pos_embed = get_1d_sincos_pos_embed(
             self.hidden_size,
             self.input_size[0] // self.patch_size[0],
         )
+        # [1, T/p, D]
         pos_embed = torch.from_numpy(
             pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed

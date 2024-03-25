@@ -33,7 +33,7 @@ from opensora.utils.train_utils import update_ema
 
 def main():
     # ======================================================
-    # step: 1. 解析args和cfg进行合并， 创建exp目录并保存cfg
+    # step: 1 解析args和cfg进行合并， 创建exp目录并保存cfg
     # ======================================================
     cfg = parse_configs(training=True)
     print(cfg)
@@ -41,19 +41,19 @@ def main():
     save_training_config(cfg._cfg_dict, exp_dir)
 
     # ======================================================
-    # step: 2. 检查cuda和dtype， 初始化ColossalAI的环境
+    # step: 2 检查cuda和dtype， 初始化colossalai的环境
     # ======================================================
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
     assert cfg.dtype in [
         "fp16", "bf16"], f"Unknown mixed precision {cfg.dtype}"
 
-    # step: 2.1. colossalai init distributed training
+    # step: 2.1 colossalai初始化分布式训练
     colossalai.launch_from_torch({})
     coordinator = DistCoordinator()
     device = get_current_device()
     dtype = to_torch_dtype(cfg.dtype)
 
-    # step: 2.2. init logger, tensorboard & wandb
+    # step: 2.2 初始化logger tensorboard wandb
     if not coordinator.is_master():
         logger = create_logger(None)
     else:
@@ -64,7 +64,7 @@ def main():
         if cfg.wandb:
             wandb.init(project="minisora", name=exp_name, config=cfg._cfg_dict)
 
-    # step: 2.3. initialize ColossalAI booster
+    # step: 2.3 初始化colossalai booster
     if cfg.plugin == "zero2":
         plugin = LowLevelZeroPlugin(
             stage=2,
@@ -88,7 +88,7 @@ def main():
     booster = Booster(plugin=plugin)
 
     # ======================================================
-    # step: 3. build dataset and dataloader
+    # step: 3 数据集导入
     # ======================================================
     dataset = DatasetFromCSV(
         cfg.data_path,
@@ -124,14 +124,16 @@ def main():
     logger.info(f"Total batch size: {total_batch_size}")
 
     # ======================================================
-    # step: 4. build model
+    # step: 4 构建模型
     # ======================================================
-    # step: 4.1. build model
-    input_size = (cfg.num_frames, *cfg.image_size)
+    # step: 4.1 vae编码、text条件编码、dit模型
+    input_size = (cfg.num_frames, *cfg.image_size)  # [T, H, W] 4,32,32
     vae = build_module(cfg.vae, MODELS)
-    latent_size = vae.get_latent_size(input_size)
+    latent_size = vae.get_latent_size(input_size) #  [T/p0, H/p1, W/p2]
+
     text_encoder = build_module(
         cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
+
     model = build_module(
         cfg.model,
         MODELS,
@@ -146,25 +148,25 @@ def main():
         f"Trainable model params: {format_numel_str(model_numel_trainable)}, Total model params: {format_numel_str(model_numel)}"
     )
 
-    # step: 4.2. create ema
+    # step: 4.2 创建ema
     ema = deepcopy(model).to(torch.float32).to(device)
     requires_grad(ema, False)
     ema_shape_dict = record_model_param_shape(ema)
 
-    # step: 4.3. move to device
+    # step: 4.3 赋值到相应计算设备
     vae = vae.to(device, dtype)
     model = model.to(device, dtype)
 
-    # step: 4.4. build scheduler
+    # step: 4.4 创建diffusion
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
-    # step: 4.5. setup optimizer
+    # step: 4.5 设置optimizer
     optimizer = HybridAdam(
         filter(lambda p: p.requires_grad, model.parameters()), lr=cfg.lr, weight_decay=0, adamw_mode=True
     )
     lr_scheduler = None
 
-    # step: 4.6. prepare for training
+    # step: 4.6 prepare for training
     if cfg.grad_checkpoint:
         set_grad_checkpoint(model)
     model.train()
@@ -172,7 +174,7 @@ def main():
     ema.eval()
 
     # =======================================================
-    # step: 5. boost model for distributed training with colossalai
+    # step: 5 boost model for distributed training with colossalai
     # =======================================================
     torch.set_default_dtype(dtype)
     model, optimizer, _, dataloader, lr_scheduler = booster.boost(
@@ -183,12 +185,12 @@ def main():
     logger.info("Boost model for distributed training")
 
     # =======================================================
-    # step: 6. training loop
+    # step: 6 training loop
     # =======================================================
     start_epoch = start_step = log_step = sampler_start_idx = 0
     running_loss = 0.0
 
-    # step: 6.1. resume training
+    # step: 6.1 恢复training
     if cfg.load is not None:
         logger.info("Loading checkpoint")
         start_epoch, start_step, sampler_start_idx = load(
@@ -201,7 +203,7 @@ def main():
     dataloader.sampler.set_start_index(sampler_start_idx)
     model_sharding(ema)
 
-    # step: 6.2. training loop
+    # step: 6.2 training
     for epoch in range(start_epoch, cfg.epochs):
         dataloader.sampler.set_epoch(epoch)
         dataloader_iter = iter(dataloader)
@@ -217,13 +219,13 @@ def main():
             for step in pbar:
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                y = batch["text"]
+                y = batch["text"] # [B, ]
 
                 with torch.no_grad():
                     # Prepare visual inputs
-                    x = vae.encode(x)  # [B, C, T, H/P, W/P]
+                    x = vae.encode(x)  # [B, C, T, H/8, W/8]
                     # Prepare text inputs
-                    model_args = text_encoder.encode(y)
+                    model_args = text_encoder.encode(y) 
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps,

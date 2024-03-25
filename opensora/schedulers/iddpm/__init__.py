@@ -23,13 +23,18 @@ class IDDPM(SpacedDiffusion):
         diffusion_steps=1000,
         cfg_scale=4.0,
     ):
+        # step: 1 获取betas
         betas = gd.get_named_beta_schedule(noise_schedule, diffusion_steps)
+
+        # step: 2 loss
         if use_kl:
             loss_type = gd.LossType.RESCALED_KL
         elif rescale_learned_sigmas:
             loss_type = gd.LossType.RESCALED_MSE
         else:
             loss_type = gd.LossType.MSE
+        
+        
         if num_sampling_steps is not None:
             assert timestep_respacing is None
             timestep_respacing = str(num_sampling_steps)

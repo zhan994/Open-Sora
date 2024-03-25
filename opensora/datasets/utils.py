@@ -38,6 +38,9 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
 
 
 class StatefulDistributedSampler(DistributedSampler):
+    """
+      DistributedSampler的子类
+    """
     def __init__(
         self,
         dataset: Dataset,
@@ -54,7 +57,7 @@ class StatefulDistributedSampler(DistributedSampler):
         iterator = super().__iter__()
         indices = list(iterator)
         indices = indices[self.start_index:]
-        return iter(indices)
+        return iter(indices) 
 
     def __len__(self) -> int:
         return self.num_samples - self.start_index
@@ -75,6 +78,7 @@ def prepare_dataloader(
     **kwargs,
 ):
     r"""
+    数据分布式导入
     Prepare a dataloader for distributed training. The dataloader will be wrapped by
     `torch.utils.data.DataLoader` and `StatefulDistributedSampler`.
 
@@ -96,12 +100,13 @@ def prepare_dataloader(
         :class:`torch.utils.data.DataLoader`: A DataLoader used for training or testing.
     """
     _kwargs = kwargs.copy()
+    # step: 1 数据集导入的sampler
     process_group = process_group or _get_default_group()
     sampler = StatefulDistributedSampler(
         dataset, num_replicas=process_group.size(), rank=process_group.rank(), shuffle=shuffle
     )
 
-    # Deterministic dataloader
+    # step: 2 dataloader
     def seed_worker(worker_id):
         worker_seed = seed
         np.random.seed(worker_seed)

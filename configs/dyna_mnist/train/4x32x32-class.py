@@ -41,9 +41,9 @@ wandb = False
 
 epochs = 1000
 log_every = 10
-ckpt_every = 5000
+ckpt_every = 1000
 load = None
 
-batch_size = 8
+batch_size = 256
 lr = 2e-5
 grad_clip = 1.0
