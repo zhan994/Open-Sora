@@ -86,3 +86,43 @@ grad_clip = 1.0
 ```
 
 ## 2.3 推理
+
+使用`4x32x32-class`的配置采样`DynaMNIST`，如下：
+
+```bash
+torchrun --nproc_per_node 1 --standalone scripts/inference.py configs/dyna_mnist/inference/4x32x32-class.py --ckpt-path outputs/001-F4S1-Latte-S-2/epoch764-global_step179000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
+```
+
+```python
+num_frames = 4
+fps = 0.5
+image_size = (32, 32)
+
+# Define model
+model = dict(
+    type="Latte-S/2",
+    condition="label_10",
+    from_pretrained="PRETRAINED_MODEL"
+)
+vae = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
+text_encoder = dict(
+    type="classes",
+    num_classes=10,
+)
+scheduler = dict(
+    type="dpm-solver",
+    num_sampling_steps=20,
+    cfg_scale=4.0,
+)
+dtype = "fp16"
+
+# Others
+batch_size = 2
+seed = 42
+prompt_path = "./assets/texts/dyna_mnist_id.txt"
+save_dir = "./outputs/samples/"
+```
+

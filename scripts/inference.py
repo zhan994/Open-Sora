@@ -63,7 +63,7 @@ def main():
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
-        enable_sequence_parallelism=enable_sequence_parallelism,
+        # enable_sequence_parallelism=enable_sequence_parallelism, # note: latte cancel
     )
     text_encoder.y_embedder = model.y_embedder  # hack for classifier-free guidance
 
