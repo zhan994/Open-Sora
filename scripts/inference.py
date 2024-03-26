@@ -21,7 +21,7 @@ def load_prompts(prompt_path):
 
 def main():
     # ======================================================
-    # 1. cfg and init distributed env
+    # step: 1 cfg & 分布式环境
     # ======================================================
     cfg = parse_configs(training=False)
     print(cfg)
@@ -37,7 +37,7 @@ def main():
         enable_sequence_parallelism = False
 
     # ======================================================
-    # 2. runtime variables
+    # step: 2 运行相关的参数
     # ======================================================
     torch.set_grad_enabled(False)
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -48,9 +48,9 @@ def main():
     prompts = load_prompts(cfg.prompt_path)
 
     # ======================================================
-    # 3. build model & load weights
+    # step: 3 build model & load weights
     # ======================================================
-    # 3.1. build model
+    # step: 3.1 构建模型
     input_size = (cfg.num_frames, *cfg.image_size)
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
@@ -67,14 +67,14 @@ def main():
     )
     text_encoder.y_embedder = model.y_embedder  # hack for classifier-free guidance
 
-    # 3.2. move to device & eval
+    # step: 3.2 move to device & eval
     vae = vae.to(device, dtype).eval()
     model = model.to(device, dtype).eval()
 
-    # 3.3. build scheduler
+    # step: 3.3 build scheduler
     scheduler = build_module(cfg.scheduler, SCHEDULERS)
 
-    # 3.4. support for multi-resolution
+    # step: 3.4 multi-resolution支持
     model_args = dict()
     if cfg.multi_resolution:
         image_size = cfg.image_size
@@ -83,7 +83,7 @@ def main():
         model_args["data_info"] = dict(ar=ar, hw=hw)
 
     # ======================================================
-    # 4. inference
+    # step: 4 inference
     # ======================================================
     sample_idx = 0
     save_dir = cfg.save_dir

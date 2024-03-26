@@ -14,6 +14,7 @@ from torchvision.utils import save_image
 
 def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
     """
+    保存采样结果
     Args:
         x (Tensor): shape [C, T, H, W]
     """
@@ -25,15 +26,19 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
         save_image([x], save_path, normalize=normalize,
                    value_range=value_range)
     else:
-        save_path += ".mp4"
+        img_path = save_path + ".png"
+        video_path = save_path + ".mp4"
         if normalize:
             low, high = value_range
             x.clamp_(min=low, max=high)
             x.sub_(low).div_(max(high - low, 1e-5))
 
-        x = x.mul(255).add_(0.5).clamp_(0, 255).permute(
+        x_v = x.mul(255).add_(0.5).clamp_(0, 255).permute(
             1, 2, 3, 0).to("cpu", torch.uint8)
-        write_video(save_path, x, fps=fps, video_codec="h264")
+        write_video(video_path, x_v, fps=fps, video_codec="h264")
+        x_i = x.permute(1, 0, 2, 3)
+        save_image(x_i, img_path, nrow=1, pad_value=100)
+
     print(f"Saved to {save_path}")
 
 
@@ -41,6 +46,7 @@ class StatefulDistributedSampler(DistributedSampler):
     """
       DistributedSampler的子类
     """
+
     def __init__(
         self,
         dataset: Dataset,
@@ -57,7 +63,7 @@ class StatefulDistributedSampler(DistributedSampler):
         iterator = super().__iter__()
         indices = list(iterator)
         indices = indices[self.start_index:]
-        return iter(indices) 
+        return iter(indices)
 
     def __len__(self) -> int:
         return self.num_samples - self.start_index
