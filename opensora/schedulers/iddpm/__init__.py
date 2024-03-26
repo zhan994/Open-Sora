@@ -34,12 +34,14 @@ class IDDPM(SpacedDiffusion):
         else:
             loss_type = gd.LossType.MSE
         
-        
+        # step: 3 timestep_respacing
         if num_sampling_steps is not None:
             assert timestep_respacing is None
             timestep_respacing = str(num_sampling_steps)
         if timestep_respacing is None or timestep_respacing == "":
             timestep_respacing = [diffusion_steps]
+        
+        # step: 4 SpacedDiffusion构建，默认1000steps，EPSILON，LEARNED_RANGE，MSE
         super().__init__(
             use_timesteps=space_timesteps(diffusion_steps, timestep_respacing),
             betas=betas,

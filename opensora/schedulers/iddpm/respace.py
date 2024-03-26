@@ -19,6 +19,7 @@ from .gaussian_diffusion import GaussianDiffusion
 
 def space_timesteps(num_timesteps, section_counts):
     """
+    创建一个timesteps的列表
     Create a list of timesteps to use from an original diffusion process,
     given the number of timesteps we want to take from equally-sized portions
     of the original process.
