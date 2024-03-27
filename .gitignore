@@ -175,3 +175,6 @@ pretrained_models/
 
 # Secret files
 hostfile
+
+video/
+*.csv
