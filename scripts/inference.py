@@ -58,8 +58,8 @@ def main():
     model = build_module(
         cfg.model,
         MODELS,
-        input_size=latent_size,
-        in_channels=vae.out_channels,
+        input_size=input_size, # note: cancel vae, latent_size -> input_size
+        in_channels=1, # note: cancel vae, vae.out_channels -> 1
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -93,7 +93,7 @@ def main():
         samples = scheduler.sample(
             model,
             text_encoder,
-            z_size=(vae.out_channels, *latent_size),
+            z_size=(1, *input_size), # note: cancel vae
             prompts=batch_prompts,
             device=device,
             additional_args=model_args,

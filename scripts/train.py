@@ -140,7 +140,7 @@ def main():
         cfg.model,
         MODELS,
         input_size=input_size, # note: cancel vae, latent_size -> input_size
-        in_channels=3, # note: cancel vae, vae.out_channels -> 3
+        in_channels=1, # note: cancel vae, vae.out_channels -> 1
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -221,6 +221,7 @@ def main():
             for step in pbar:
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
+                x = x[:, 0].unsqueeze(1) # note: reduce in_chan to 1
                 y = batch["text"] # [B, ]
 
                 with torch.no_grad():
