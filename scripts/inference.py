@@ -98,7 +98,9 @@ def main():
             device=device,
             additional_args=model_args,
         )
-        samples = vae.decode(samples.to(dtype))
+        # note: cancel vae decode
+        # samples = vae.decode(samples.to(dtype))
+        samples = samples.to(dtype)
 
         if coordinator.is_master():
             for idx, sample in enumerate(samples):

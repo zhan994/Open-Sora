@@ -53,7 +53,10 @@ class Latte(DiT):
         y = self.y_embedder(y, self.training)  # (N, D)
         if self.use_text_encoder:
             y = y.squeeze(1).squeeze(1)
-        condition = t + y
+        
+        # note: cancel text/class condition
+        # condition = t + y
+        condition = t
         condition_spatial = repeat(
             condition, "b d -> (b t) d", t=self.num_temporal)
         condition_temporal = repeat(

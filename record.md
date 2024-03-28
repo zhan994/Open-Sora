@@ -90,7 +90,7 @@ grad_clip = 1.0
 使用`4x32x32-class`的配置采样`DynaMNIST`，如下：
 
 ```bash
-torchrun --nproc_per_node 1 --standalone scripts/inference.py configs/dyna_mnist/inference/4x32x32-class.py --ckpt-path outputs/001-F4S1-Latte-S-2/epoch764-global_step179000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
+torchrun --nproc_per_node 1 --standalone scripts/inference.py configs/dyna_mnist/inference/4x32x32-class.py --ckpt-path outputs/000-F4S1-Latte-S-2/epoch764-global_step179000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
 ```
 
 ```python

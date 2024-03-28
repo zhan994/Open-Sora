@@ -139,8 +139,8 @@ def main():
     model = build_module(
         cfg.model,
         MODELS,
-        input_size=latent_size,
-        in_channels=vae.out_channels,
+        input_size=input_size, # note: cancel vae, latent_size -> input_size
+        in_channels=3, # note: cancel vae, vae.out_channels -> 3
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -225,7 +225,8 @@ def main():
 
                 with torch.no_grad():
                     # Prepare visual inputs
-                    x = vae.encode(x)  # [B, C, T, H/8, W/8]
+                    # note: cancel vae encode
+                    # x = vae.encode(x)  # [B, C, T, H/8, W/8]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y) 
 

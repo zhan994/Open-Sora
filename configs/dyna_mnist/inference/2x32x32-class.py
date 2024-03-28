@@ -1,4 +1,4 @@
-num_frames = 4
+num_frames = 2
 fps = 1
 image_size = (32, 32)
 
@@ -29,4 +29,4 @@ dtype = "fp16"
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/dyna_mnist_id.txt"
-save_dir = "./output_samples/4x32x32-class/"
+save_dir = "./output_samples/2x32x32-class/"

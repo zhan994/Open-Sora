@@ -176,5 +176,6 @@ pretrained_models/
 # Secret files
 hostfile
 
+output_samples/
 video/
 *.csv
