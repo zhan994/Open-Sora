@@ -33,6 +33,7 @@ from opensora.utils.train_utils import update_ema
 import os
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
+
 def main():
     # ======================================================
     # step: 1 解析args和cfg进行合并， 创建exp目录并保存cfg
@@ -131,7 +132,7 @@ def main():
     # step: 4.1 vae编码、text条件编码、dit模型
     input_size = (cfg.num_frames, *cfg.image_size)  # [T, H, W] 4,32,32
     vae = build_module(cfg.vae, MODELS)
-    latent_size = vae.get_latent_size(input_size) #  [T/p0, H/p1, W/p2]
+    latent_size = vae.get_latent_size(input_size)  # [T/p0, H/p1, W/p2]
 
     text_encoder = build_module(
         cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
@@ -139,8 +140,8 @@ def main():
     model = build_module(
         cfg.model,
         MODELS,
-        input_size=input_size, # note: cancel vae, latent_size -> input_size
-        in_channels=1, # note: cancel vae, vae.out_channels -> 1
+        input_size=input_size,  # note: cancel vae, latent_size -> input_size
+        in_channels=1,  # note: cancel vae & reduce in_ch to 1, vae.out_channels -> 1
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -221,15 +222,15 @@ def main():
             for step in pbar:
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                x = x[:, 0].unsqueeze(1) # note: reduce in_chan to 1
-                y = batch["text"] # [B, ]
+                x = x[:, 0].unsqueeze(1)  # note: reduce in_ch to 1
+                y = batch["text"]  # [B, ]
 
                 with torch.no_grad():
                     # Prepare visual inputs
-                    # note: cancel vae encode
-                    # x = vae.encode(x)  # [B, C, T, H/8, W/8]
+                    # x = vae.encode(x)  # [B, C, T, H/8, W/8] # note: cancel vae encode
                     # Prepare text inputs
-                    model_args = text_encoder.encode(y) 
+                    # model_args = text_encoder.encode(y)
+                    model_args = None  # note: cancel text/class condition
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps,

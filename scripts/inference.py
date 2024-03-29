@@ -98,8 +98,7 @@ def main():
             device=device,
             additional_args=model_args,
         )
-        # note: cancel vae decode
-        # samples = vae.decode(samples.to(dtype))
+        # samples = vae.decode(samples.to(dtype)) # note: cancel vae decode
         samples = samples.to(dtype)
 
         if coordinator.is_master():

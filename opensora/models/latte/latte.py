@@ -50,11 +50,12 @@ class Latte(DiT):
         # step: 2 condtion = timestep_embed + label_embed
         x = rearrange(x, "b t s d -> b (t s) d")
         t = self.t_embedder(t, dtype=x.dtype)  # (N, D)
-        y = self.y_embedder(y, self.training)  # (N, D)
-        if self.use_text_encoder:
-            y = y.squeeze(1).squeeze(1)
-        
+
         # note: cancel text/class condition
+        # y = self.y_embedder(y, self.training)  # (N, D)
+        # if self.use_text_encoder:
+        #     y = y.squeeze(1).squeeze(1)
+        
         # condition = t + y
         condition = t
         condition_spatial = repeat(
@@ -128,6 +129,19 @@ def Latte_S_2(from_pretrained=None, **kwargs):
     model = Latte(
         depth=12,
         hidden_size=384,
+        patch_size=(1, 2, 2),
+        num_heads=6,
+        **kwargs,
+    )
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+@MODELS.register_module("Latte-XS/2")
+def Latte_XS_2(from_pretrained=None, **kwargs):
+    model = Latte(
+        depth=12,
+        hidden_size=192,
         patch_size=(1, 2, 2),
         num_heads=6,
         **kwargs,
