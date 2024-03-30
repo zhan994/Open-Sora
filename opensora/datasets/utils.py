@@ -35,6 +35,9 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
 
         x_v = x.mul(255).add_(0.5).clamp_(0, 255).permute(
             1, 2, 3, 0).to("cpu", torch.uint8)
+
+        if x_v.shape[3] == 1:
+            x_v = x_v.repeat(1, 1, 1, 3)
         write_video(video_path, x_v, fps=fps, video_codec="h264")
         x_i = x.permute(1, 0, 2, 3)
         save_image(x_i, img_path, nrow=1, pad_value=100)

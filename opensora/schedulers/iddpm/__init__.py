@@ -75,7 +75,6 @@ class IDDPM(SpacedDiffusion):
         if additional_args is not None:
             model_args.update(additional_args)
 
-        model_args = None # note: cancel text/class condition
         forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
         samples = self.p_sample_loop(
             forward,

@@ -4,7 +4,7 @@ image_size = (32, 32)
 
 # Define model
 model = dict(
-    type="Latte-S/2",
+    type="Latte-XS/2",
     condition="label_10",
     from_pretrained="PRETRAINED_MODEL",
     enable_flashattn=False,
