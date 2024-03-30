@@ -229,8 +229,7 @@ def main():
                     # Prepare visual inputs
                     # x = vae.encode(x)  # [B, C, T, H/8, W/8] # note: cancel vae encode
                     # Prepare text inputs
-                    # model_args = text_encoder.encode(y)
-                    model_args = None  # note: cancel text/class condition
+                    model_args = text_encoder.encode(y)
 
                 # Diffusion
                 t = torch.randint(0, scheduler.num_timesteps,
