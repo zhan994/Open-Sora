@@ -1,6 +1,7 @@
 import argparse
 import csv
 import os
+import random
 
 from torchvision.datasets import ImageNet
 
@@ -66,10 +67,23 @@ def process_dyna_mnist(root, text):
     classes_text = [words[x] for x in nums]
     classes = classes_text if text else nums
     samples = list(zip(video_lists, classes))
+    
+    # note: random sample 1 of 8
+    random_samples = []
+    if True:
+        total_size = len(samples)
+        ind_lst = list(range(0, total_size, 8))
+        for i in ind_lst:
+            ind = i + random.randint(0, 8)
+            random_samples.append(samples[ind])
+
     output = f"DynaMNIST.csv"
     with open(output, "w") as f:
         writer = csv.writer(f)
-        writer.writerows(samples)
+        if True:
+            writer.writerows(random_samples)
+        else:
+            writer.writerows(samples)
 
     print(f"Saved {len(samples)} samples to {output}.")
 

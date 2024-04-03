@@ -149,3 +149,16 @@ def Latte_XS_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
+
+@MODELS.register_module("Latte-XS-P/2")
+def Latte_XS_P_2(from_pretrained=None, **kwargs):
+    model = Latte(
+        depth=12,
+        hidden_size=192,
+        patch_size=(1, 2, 2),
+        num_heads=12,
+        **kwargs,
+    )
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
