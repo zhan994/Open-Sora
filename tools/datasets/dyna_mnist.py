@@ -99,10 +99,6 @@ def main(args):
         # hor
         hor_imgs = video_horizon(img, pad_unit, pad_cnt)
         videos[label].append(hor_imgs)
-
-        # note: generate 2 horizontal moving numbers
-        continue
-
         videos[label].append(hor_imgs[::-1])
 
         # ver
