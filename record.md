@@ -3,7 +3,7 @@
 针对`ubuntu2004`下的`python3.8 + cuda11.3 + pytorch1.12`安装。
 
 ```bash
-pip3_install_pkg colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.13 triton packaging ninja apex
+pip3_install_pkg colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.13 triton packaging ninja apex imageio-ffmpeg
 
 # install flash attention (optional) cuda版本不够 
 pip3_install_pkg flash-attn --no-build-isolation
@@ -18,7 +18,7 @@ pip install -v .
 
 ```bash
 conda activate opensora
-sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton
+sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton imageio-ffmpeg
 
 # install flash attention (optional)
 pip3_install_pkg flash-attn --no-build-isolation

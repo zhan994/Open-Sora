@@ -17,7 +17,7 @@ def video_horizon(img, pad_unit, pad_cnt):
     img_size = img.size[0]
     new_size = img_size + pad_cnt * pad_unit
     hor_imgs = []
-    for i in range(2):
+    for i in range(4):
         new_img = Image.new("L", (new_size, new_size), 0)
         new_img.paste(img, (pad_unit // 2 + pad_unit *
                             i, pad_cnt * pad_unit // 2))
