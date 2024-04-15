@@ -75,6 +75,18 @@ def video_diag_r(img, pad_unit, pad_cnt):
 
     return diag_r_imgs
 
+def video_static(img, pad_unit, pad_cnt):
+    """
+        video static
+    """
+    img_size = img.size[0]
+    new_size = img_size + pad_cnt * pad_unit
+    new_img = Image.new("L", (new_size, new_size), 0)
+    new_img.paste(img, (pad_unit * pad_cnt // 2,  pad_unit * pad_cnt // 2))
+    static_imgs = [new_img] * 4
+
+    return static_imgs
+
 
 def main(args):
     os.makedirs(args.video_path, exist_ok=True)
@@ -115,6 +127,12 @@ def main(args):
         diag_r_imgs = video_diag_r(img, pad_unit, pad_cnt)
         videos[label].append(diag_r_imgs)
         videos[label].append(diag_r_imgs[::-1])
+
+        # static
+        static_imgs = video_static(img, pad_unit, pad_cnt)
+        videos[label].append(static_imgs)
+
+
 
     print(" ===============> video done. ")
     print(" ===============> save videos ,,, ")

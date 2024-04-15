@@ -68,13 +68,14 @@ def process_dyna_mnist(root, text):
     classes = classes_text if text else nums
     samples = list(zip(video_lists, classes))
     
-    # note: random sample 1 of 8
+    # note: random sample 1 of nums
     random_samples = []
+    num = 9
     if True:
         total_size = len(samples)
-        ind_lst = list(range(0, total_size, 8))
+        ind_lst = list(range(0, total_size, num))
         for i in ind_lst:
-            ind = i + random.randint(0, 8)
+            ind = i + random.randint(0, num)
             random_samples.append(samples[ind])
 
     output = f"DynaMNIST.csv"
