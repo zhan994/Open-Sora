@@ -14,6 +14,23 @@ cd Open-Sora
 pip install -v .
 ```
 
+针对`ubuntu2004`下的`python3.10 + cuda11.8 + pytorch2.1.2`安装。
+
+```bash
+conda activate opensora
+sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton
+
+# install flash attention (optional)
+pip3_install_pkg flash-attn --no-build-isolation
+
+# install this project
+git clone https://github.com/hpcaitech/Open-Sora
+cd Open-Sora
+pip install -v .
+```
+
+
+
 # 2 训练推理
 
 ## 2.1 数据集

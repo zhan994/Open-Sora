@@ -105,7 +105,7 @@ pip install flash-attn --no-build-isolation
 # install apex (optional)
 pip install -v --disable-pip-version-check --no-cache-dir --no-build-isolation --config-settings "--build-option=--cpp_ext" --config-settings "--build-option=--cuda_ext" git+https://github.com/NVIDIA/apex.git
 
-# install xformers==0.0.13 for torch1.12-cu113
+# install xformers==0.0.13 for torch1.12-cu113/ xformers==0.0.23.post1 for torch2.1.2-cu118
 pip3 install -U xformers --index-url https://download.pytorch.org/whl/cu121
 
 # install some other pkgs in requirements.txt

@@ -12,5 +12,5 @@ timm
 tqdm
 transformers
 wandb
-xformers==0.0.13
+xformers
 triton
