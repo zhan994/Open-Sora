@@ -17,8 +17,6 @@ pip install -v .
 针对工作站`ubuntu2004`下的`python3.10 + cuda11.8 + pytorch2.1.2`安装。
 
 ```bash
-# 可以使用/opt/anaconda3/envs/opensora/bin下的可执行文件
-echo "export PATH=/opt/anaconda3/envs/opensora/bin:$PATH" >> ~/.bashrc && source ~/.bashrc
 conda activate opensora
 # 安装到/opt/anaconda3/envs/opensora下，需要以sudo权限
 sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton imageio-ffmpeg
