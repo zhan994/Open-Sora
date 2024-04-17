@@ -19,7 +19,7 @@ pip install -v .
 ```bash
 echo "export PATH=/opt/anaconda3/envs/opensora/bin:$PATH" >> ~/.bashrc && source ~/.bashrc
 conda activate opensora
-sudo pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton imageio-ffmpeg
+sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton imageio-ffmpeg
 
 # install flash attention (optional)
 pip3_install_pkg flash-attn --no-build-isolation
