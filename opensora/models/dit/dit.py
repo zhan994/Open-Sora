@@ -136,9 +136,10 @@ class DiT(nn.Module):
         self.depth = depth
 
         # step: 2 pos_embed, patch_embed, label_embed, timestep_embed
-        self.register_buffer("pos_embed_spatial", self.get_spatial_pos_embed()) # 1, H*W/P**2, D
+        self.register_buffer("pos_embed_spatial",
+                             self.get_spatial_pos_embed())  # 1, H*W/P**2, D
         self.register_buffer("pos_embed_temporal",
-                             self.get_temporal_pos_embed()) # 1, T/P, D
+                             self.get_temporal_pos_embed())  # 1, T/P, D
         self.x_embedder = PatchEmbed3D(
             patch_size, in_channels, embed_dim=hidden_size)
         if not self.use_text_encoder:
@@ -156,16 +157,36 @@ class DiT(nn.Module):
         self.t_embedder = TimestepEmbedder(hidden_size)
 
         # step: 3 blocks
+        # self.blocks = nn.ModuleList(
+        #     [
+        #         DiTBlock(
+        #             hidden_size,
+        #             num_heads,
+        #             mlp_ratio=mlp_ratio,
+        #             enable_flashattn=enable_flashattn,
+        #             enable_layernorm_kernel=enable_layernorm_kernel,
+        #         )
+        #         for _ in range(depth)
+        #     ]
+        # )
         self.blocks = nn.ModuleList(
             [
                 DiTBlock(
                     hidden_size,
-                    num_heads,
+                    num_heads * 2,
                     mlp_ratio=mlp_ratio,
                     enable_flashattn=enable_flashattn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                 )
-                for _ in range(depth)
+                if i % 2 == 0 else
+                DiTBlock(
+                    hidden_size,
+                    num_heads // 2,
+                    mlp_ratio=mlp_ratio,
+                    enable_flashattn=enable_flashattn,
+                    enable_layernorm_kernel=enable_layernorm_kernel,
+                )
+                for i in range(depth)
             ]
         )
         self.final_layer = FinalLayer(
