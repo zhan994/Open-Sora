@@ -49,10 +49,11 @@ class Latte(DiT):
 
         # step: 2 condtion = timestep_embed + label_embed
         x = rearrange(x, "b t s d -> b (t s) d")
-        t = self.t_embedder(t, dtype=x.dtype)  # (N, D)
+        t = self.t_embedder(t, dtype=x.dtype)  # (B, D)
+        # print(x.shape, t.shape)
 
         # note: cancel text/class condition
-        # y = self.y_embedder(y, self.training)  # (N, D)
+        # y = self.y_embedder(y, self.training)  # (B, D)
         # if self.use_text_encoder:
         #     y = y.squeeze(1).squeeze(1)
         

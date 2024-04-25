@@ -256,8 +256,8 @@ class DiT(nn.Module):
         else:
             x = rearrange(x, "b t s d -> b (t s) d")
 
-        t = self.t_embedder(t, dtype=x.dtype)  # (N, D)
-        y = self.y_embedder(y, self.training)  # (N, D)
+        t = self.t_embedder(t, dtype=x.dtype)  # (B, D)
+        y = self.y_embedder(y, self.training)  # (B, D)
         if self.use_text_encoder:
             y = y.squeeze(1).squeeze(1)
         condition = t + y

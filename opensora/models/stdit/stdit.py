@@ -43,6 +43,7 @@ class STDiTBlock(nn.Module):
         enable_sequence_parallelism=False,
     ):
         super().__init__()
+        # step: 1 load param
         self.hidden_size = hidden_size
         self.enable_flashattn = enable_flashattn
         self._enable_sequence_parallelism = enable_sequence_parallelism
@@ -54,6 +55,7 @@ class STDiTBlock(nn.Module):
             self.attn_cls = Attention
             self.mha_cls = MultiHeadCrossAttention
 
+        # step: 2 layers
         self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = self.attn_cls(
             hidden_size,
@@ -89,18 +91,19 @@ class STDiTBlock(nn.Module):
     def forward(self, x, y, t, mask=None, tpe=None):
         B, N, C = x.shape
 
+        # step: 1 modulate
         shift_msa, scale_msa, gate_msa, shift_mlp, scale_mlp, gate_mlp = (
             self.scale_shift_table[None] + t.reshape(B, 6, -1)
         ).chunk(6, dim=1)
         x_m = t2i_modulate(self.norm1(x), shift_msa, scale_msa)
 
-        # spatial branch
+        # step: 2 spatial branch
         x_s = rearrange(x_m, "B (T S) C -> (B T) S C", T=self.d_t, S=self.d_s)
         x_s = self.attn(x_s)
         x_s = rearrange(x_s, "(B T) S C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_s)
 
-        # temporal branch
+        # step: 3 temporal branch
         x_t = rearrange(x, "B (T S) C -> (B S) T C", T=self.d_t, S=self.d_s)
         if tpe is not None:
             x_t = x_t + tpe
@@ -108,10 +111,11 @@ class STDiTBlock(nn.Module):
         x_t = rearrange(x_t, "(B S) T C -> B (T S) C", T=self.d_t, S=self.d_s)
         x = x + self.drop_path(gate_msa * x_t)
 
-        # cross attn
-        x = x + self.cross_attn(x, y, mask)
+        # step: 4 cross attn
+        # note: cancel text/class condition
+        # x = x + self.cross_attn(x, y, mask)
 
-        # mlp
+        # step: 5 mlp
         x = x + self.drop_path(gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
 
         return x
@@ -241,7 +245,7 @@ class STDiT(nn.Module):
             x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="down")
 
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
-        t0 = self.t_block(t)  # [B, C]
+        t0 = self.t_block(t)  # [B, 6*C]
         y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
 
         if mask is not None:
@@ -384,6 +388,13 @@ class STDiT(nn.Module):
 @MODELS.register_module("STDiT-XL/2")
 def STDiT_XL_2(from_pretrained=None, **kwargs):
     model = STDiT(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+@MODELS.register_module("STDiT-S/2")
+def STDiT_S_2(from_pretrained=None, **kwargs):
+    model = STDiT(depth=12, hidden_size=384, patch_size=(1, 2, 2), num_heads=6, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
