@@ -16,7 +16,7 @@ sp_size = 1
 
 # Define model
 model = dict(
-    type="Latte-XS-P/2",
+    type="Latte-S/2",
     condition="label_10",
     enable_flashattn=False,
     enable_layernorm_kernel=False,

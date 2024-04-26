@@ -56,7 +56,7 @@ class Latte(DiT):
         # y = self.y_embedder(y, self.training)  # (B, D)
         # if self.use_text_encoder:
         #     y = y.squeeze(1).squeeze(1)
-        
+
         # condition = t + y
         condition = t
         condition_spatial = repeat(
@@ -125,6 +125,7 @@ def Latte_XL_2x2(from_pretrained=None, **kwargs):
         load_checkpoint(model, from_pretrained)
     return model
 
+
 @MODELS.register_module("Latte-S/2")
 def Latte_S_2(from_pretrained=None, **kwargs):
     model = Latte(
@@ -138,6 +139,7 @@ def Latte_S_2(from_pretrained=None, **kwargs):
         load_checkpoint(model, from_pretrained)
     return model
 
+
 @MODELS.register_module("Latte-XS/2")
 def Latte_XS_2(from_pretrained=None, **kwargs):
     model = Latte(
@@ -150,6 +152,7 @@ def Latte_XS_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
+
 
 @MODELS.register_module("Latte-XS-P/2")
 def Latte_XS_P_2(from_pretrained=None, **kwargs):
