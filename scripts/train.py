@@ -1,37 +1,35 @@
-from copy import deepcopy
-
-import os
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-
-import colossalai
-import torch
-import torch.distributed as dist
-import wandb
-from colossalai.booster import Booster
-from colossalai.booster.plugin import LowLevelZeroPlugin
-from colossalai.cluster import DistCoordinator
-from colossalai.nn.optimizer import HybridAdam
-from colossalai.utils import get_current_device
-from tqdm import tqdm
-
-from opensora.acceleration.checkpoint import set_grad_checkpoint
-from opensora.acceleration.parallel_states import (
-    get_data_parallel_group,
-    set_data_parallel_group,
-    set_sequence_parallel_group,
-)
-from opensora.acceleration.plugin import ZeroSeqParallelPlugin
-from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
-from opensora.registry import MODELS, SCHEDULERS, build_module
-from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
+from opensora.utils.train_utils import update_ema
+from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
 from opensora.utils.config_utils import (
     create_experiment_workspace,
     create_tensorboard_writer,
     parse_configs,
     save_training_config,
 )
-from opensora.utils.misc import all_reduce_mean, format_numel_str, get_model_numel, requires_grad, to_torch_dtype
-from opensora.utils.train_utils import update_ema
+from opensora.utils.ckpt_utils import create_logger, load, model_sharding, record_model_param_shape, save
+from opensora.registry import MODELS, SCHEDULERS, build_module
+from opensora.datasets import DatasetFromCSV, get_transforms_image, get_transforms_video, prepare_dataloader
+from opensora.acceleration.plugin import ZeroSeqParallelPlugin
+from opensora.acceleration.parallel_states import (
+    get_data_parallel_group,
+    set_data_parallel_group,
+    set_sequence_parallel_group,
+)
+from opensora.acceleration.checkpoint import set_grad_checkpoint
+from tqdm import tqdm
+from colossalai.utils import get_current_device
+from colossalai.nn.optimizer import HybridAdam
+from colossalai.cluster import DistCoordinator
+from colossalai.booster.plugin import LowLevelZeroPlugin
+from colossalai.booster import Booster
+import wandb
+import torch.distributed as dist
+import torch
+import colossalai
+from copy import deepcopy
+
+import os
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
 
 def main():
@@ -140,8 +138,8 @@ def main():
     model = build_module(
         cfg.model,
         MODELS,
-        input_size=input_size,  # note: cancel vae, latent_size -> input_size
-        in_channels=1,  # note: cancel vae & reduce in_ch to 1, vae.out_channels -> 1
+        input_size=latent_size,
+        in_channels=vae.out_channels,
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -222,12 +220,11 @@ def main():
             for step in pbar:
                 batch = next(dataloader_iter)
                 x = batch["video"].to(device, dtype)  # [B, C, T, H, W]
-                x = x[:, 0].unsqueeze(1)  # note: reduce in_ch to 1
                 y = batch["text"]  # [B, ]
 
                 with torch.no_grad():
                     # Prepare visual inputs
-                    # x = vae.encode(x)  # [B, C, T, H/8, W/8] # note: cancel vae encode
+                    x = vae.encode(x)  # [B, C, T, H/8, W/8]
                     # Prepare text inputs
                     model_args = text_encoder.encode(y)
 

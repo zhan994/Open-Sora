@@ -157,38 +157,38 @@ class DiT(nn.Module):
         self.t_embedder = TimestepEmbedder(hidden_size)
 
         # step: 3 blocks
-        # self.blocks = nn.ModuleList(
-        #     [
-        #         DiTBlock(
-        #             hidden_size,
-        #             num_heads,
-        #             mlp_ratio=mlp_ratio,
-        #             enable_flashattn=enable_flashattn,
-        #             enable_layernorm_kernel=enable_layernorm_kernel,
-        #         )
-        #         for _ in range(depth)
-        #     ]
-        # )
         self.blocks = nn.ModuleList(
             [
                 DiTBlock(
                     hidden_size,
-                    num_heads * 2,
+                    num_heads,
                     mlp_ratio=mlp_ratio,
                     enable_flashattn=enable_flashattn,
                     enable_layernorm_kernel=enable_layernorm_kernel,
                 )
-                if i % 2 == 0 else
-                DiTBlock(
-                    hidden_size,
-                    num_heads // 2,
-                    mlp_ratio=mlp_ratio,
-                    enable_flashattn=enable_flashattn,
-                    enable_layernorm_kernel=enable_layernorm_kernel,
-                )
-                for i in range(depth)
+                for _ in range(depth)
             ]
         )
+        # self.blocks = nn.ModuleList(
+        #     [
+        #         DiTBlock(
+        #             hidden_size,
+        #             num_heads * 2,
+        #             mlp_ratio=mlp_ratio,
+        #             enable_flashattn=enable_flashattn,
+        #             enable_layernorm_kernel=enable_layernorm_kernel,
+        #         )
+        #         if i % 2 == 0 else
+        #         DiTBlock(
+        #             hidden_size,
+        #             num_heads // 2,
+        #             mlp_ratio=mlp_ratio,
+        #             enable_flashattn=enable_flashattn,
+        #             enable_layernorm_kernel=enable_layernorm_kernel,
+        #         )
+        #         for i in range(depth)
+        #     ]
+        # )
         self.final_layer = FinalLayer(
             hidden_size, np.prod(self.patch_size), self.out_channels)
 

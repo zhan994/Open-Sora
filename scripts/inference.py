@@ -31,7 +31,7 @@ def main():
     coordinator = DistCoordinator()
 
     if coordinator.world_size > 1:
-        set_sequence_parallel_group(dist.group.WORLD) 
+        set_sequence_parallel_group(dist.group.WORLD)
         enable_sequence_parallelism = True
     else:
         enable_sequence_parallelism = False
@@ -54,12 +54,13 @@ def main():
     input_size = (cfg.num_frames, *cfg.image_size)
     vae = build_module(cfg.vae, MODELS)
     latent_size = vae.get_latent_size(input_size)
-    text_encoder = build_module(cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
+    text_encoder = build_module(
+        cfg.text_encoder, MODELS, device=device)  # T5 must be fp32
     model = build_module(
         cfg.model,
         MODELS,
-        input_size=input_size, # note: cancel vae, latent_size -> input_size
-        in_channels=1, # note: cancel vae, vae.out_channels -> 1
+        input_size=latent_size,
+        in_channels=vae.out_channels,
         caption_channels=text_encoder.output_dim,
         model_max_length=text_encoder.model_max_length,
         dtype=dtype,
@@ -78,8 +79,10 @@ def main():
     model_args = dict()
     if cfg.multi_resolution:
         image_size = cfg.image_size
-        hw = torch.tensor([image_size], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
-        ar = torch.tensor([[image_size[0] / image_size[1]]], device=device, dtype=dtype).repeat(cfg.batch_size, 1)
+        hw = torch.tensor([image_size], device=device,
+                          dtype=dtype).repeat(cfg.batch_size, 1)
+        ar = torch.tensor([[image_size[0] / image_size[1]]],
+                          device=device, dtype=dtype).repeat(cfg.batch_size, 1)
         model_args["data_info"] = dict(ar=ar, hw=hw)
 
     # ======================================================
@@ -89,16 +92,16 @@ def main():
     save_dir = cfg.save_dir
     os.makedirs(save_dir, exist_ok=True)
     for i in range(0, len(prompts), cfg.batch_size):
-        batch_prompts = prompts[i : i + cfg.batch_size]
+        batch_prompts = prompts[i: i + cfg.batch_size]
         samples = scheduler.sample(
             model,
             text_encoder,
-            z_size=(1, *input_size), # note: cancel vae
+            z_size=(vae.out_channels, *latent_size),
             prompts=batch_prompts,
             device=device,
             additional_args=model_args,
         )
-        # samples = vae.decode(samples.to(dtype)) # note: cancel vae decode
+        samples = vae.decode(samples.to(dtype))
         samples = samples.to(dtype)
 
         if coordinator.is_master():

@@ -56,7 +56,8 @@ class STDiTBlock(nn.Module):
             self.mha_cls = MultiHeadCrossAttention
 
         # step: 2 layers
-        self.norm1 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.norm1 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.attn = self.attn_cls(
             hidden_size,
             num_heads=num_heads,
@@ -64,12 +65,15 @@ class STDiTBlock(nn.Module):
             enable_flashattn=enable_flashattn,
         )
         self.cross_attn = self.mha_cls(hidden_size, num_heads)
-        self.norm2 = get_layernorm(hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
+        self.norm2 = get_layernorm(
+            hidden_size, eps=1e-6, affine=False, use_kernel=enable_layernorm_kernel)
         self.mlp = Mlp(
             in_features=hidden_size, hidden_features=int(hidden_size * mlp_ratio), act_layer=approx_gelu, drop=0
         )
-        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
-        self.scale_shift_table = nn.Parameter(torch.randn(6, hidden_size) / hidden_size**0.5)
+        self.drop_path = DropPath(
+            drop_path) if drop_path > 0.0 else nn.Identity()
+        self.scale_shift_table = nn.Parameter(
+            torch.randn(6, hidden_size) / hidden_size**0.5)
 
         # temporal attention
         self.d_s = d_s
@@ -116,7 +120,9 @@ class STDiTBlock(nn.Module):
         # x = x + self.cross_attn(x, y, mask)
 
         # step: 5 mlp
-        x = x + self.drop_path(gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
+        x = x + \
+            self.drop_path(
+                gate_mlp * self.mlp(t2i_modulate(self.norm2(x), shift_mlp, scale_mlp)))
 
         return x
 
@@ -136,6 +142,7 @@ class STDiT(nn.Module):
         pred_sigma=True,
         drop_path=0.0,
         no_temporal_pos_emb=False,
+        condition="text",
         caption_channels=4096,
         model_max_length=120,
         dtype=torch.float32,
@@ -153,7 +160,8 @@ class STDiT(nn.Module):
         self.hidden_size = hidden_size
         self.patch_size = patch_size
         self.input_size = input_size
-        num_patches = np.prod([input_size[i] // patch_size[i] for i in range(3)])
+        num_patches = np.prod([input_size[i] // patch_size[i]
+                              for i in range(3)])
         self.num_patches = num_patches
         self.num_temporal = input_size[0] // patch_size[0]
         self.num_spatial = num_patches // self.num_temporal
@@ -168,18 +176,28 @@ class STDiT(nn.Module):
         self.time_scale = time_scale
 
         self.register_buffer("pos_embed", self.get_spatial_pos_embed())
-        self.register_buffer("pos_embed_temporal", self.get_temporal_pos_embed())
+        self.register_buffer("pos_embed_temporal",
+                             self.get_temporal_pos_embed())
 
         self.x_embedder = PatchEmbed3D(patch_size, in_channels, hidden_size)
         self.t_embedder = TimestepEmbedder(hidden_size)
-        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(hidden_size, 6 * hidden_size, bias=True))
-        self.y_embedder = CaptionEmbedder(
-            in_channels=caption_channels,
-            hidden_size=hidden_size,
-            uncond_prob=class_dropout_prob,
-            act_layer=approx_gelu,
-            token_num=model_max_length,
-        )
+        self.t_block = nn.Sequential(nn.SiLU(), nn.Linear(
+            hidden_size, 6 * hidden_size, bias=True))
+
+        # note: if cond == class_
+        self.use_text_encoder = not condition.startswith("label")
+        if not self.use_text_encoder:
+            num_classes = int(condition.split("_")[-1])
+            self.y_embedder = LabelEmbedder(
+                num_classes, hidden_size, class_dropout_prob)
+        else:
+            self.y_embedder = CaptionEmbedder(
+                in_channels=caption_channels,
+                hidden_size=hidden_size,
+                uncond_prob=class_dropout_prob,
+                act_layer=approx_gelu,
+                token_num=model_max_length,
+            )
 
         drop_path = [x.item() for x in torch.linspace(0, drop_path, depth)]
         self.blocks = nn.ModuleList(
@@ -198,7 +216,8 @@ class STDiT(nn.Module):
                 for i in range(self.depth)
             ]
         )
-        self.final_layer = T2IFinalLayer(hidden_size, np.prod(self.patch_size), self.out_channels)
+        self.final_layer = T2IFinalLayer(
+            hidden_size, np.prod(self.patch_size), self.out_channels)
 
         # init model
         self.initialize_weights()
@@ -232,31 +251,42 @@ class STDiT(nn.Module):
 
         x = x.to(self.dtype)
         timestep = timestep.to(self.dtype)
-        y = y.to(self.dtype)
+
+        # note: cancel type for y
+        # y = y.to(self.dtype)
 
         # embedding
         x = self.x_embedder(x)  # [B, N, C]
-        x = rearrange(x, "B (T S) C -> B T S C", T=self.num_temporal, S=self.num_spatial)
+        x = rearrange(x, "B (T S) C -> B T S C",
+                      T=self.num_temporal, S=self.num_spatial)
         x = x + self.pos_embed
         x = rearrange(x, "B T S C -> B (T S) C")
 
         # shard over the sequence dim if sp is enabled
         if self.enable_sequence_parallelism:
-            x = split_forward_gather_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="down")
+            x = split_forward_gather_backward(
+                x, get_sequence_parallel_group(), dim=1, grad_scale="down")
 
         t = self.t_embedder(timestep, dtype=x.dtype)  # [B, C]
         t0 = self.t_block(t)  # [B, 6*C]
-        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
 
-        if mask is not None:
-            if mask.shape[0] != y.shape[0]:
-                mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
-            mask = mask.squeeze(1).squeeze(1)
-            y = y.squeeze(1).masked_select(mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
-            y_lens = mask.sum(dim=1).tolist()
-        else:
-            y_lens = [y.shape[2]] * y.shape[0]
-            y = y.squeeze(1).view(1, -1, x.shape[-1])
+        # note: fit LabelEmbedder
+        y = self.y_embedder(y, self.training)  # [B, 1, N_token, C]
+        if self.use_text_encoder:
+            y = y.squeeze(1).squeeze(1)
+
+        # note: cancel mask
+        # if mask is not None:
+        #     if mask.shape[0] != y.shape[0]:
+        #         mask = mask.repeat(y.shape[0] // mask.shape[0], 1)
+        #     mask = mask.squeeze(1).squeeze(1)
+        #     y = y.squeeze(1).masked_select(
+        #         mask.unsqueeze(-1) != 0).view(1, -1, x.shape[-1])
+        #     y_lens = mask.sum(dim=1).tolist()
+        # else:
+        #     y_lens = [y.shape[2]] * y.shape[0]
+        #     y = y.squeeze(1).view(1, -1, x.shape[-1])
+        y_lens = None
 
         # blocks
         for i, block in enumerate(self.blocks):
@@ -272,7 +302,8 @@ class STDiT(nn.Module):
             x = auto_grad_checkpoint(block, x, y, t0, y_lens, tpe)
 
         if self.enable_sequence_parallelism:
-            x = gather_forward_split_backward(x, get_sequence_parallel_group(), dim=1, grad_scale="up")
+            x = gather_forward_split_backward(
+                x, get_sequence_parallel_group(), dim=1, grad_scale="up")
         # x.shape: [B, N, C]
 
         # final process
@@ -292,7 +323,8 @@ class STDiT(nn.Module):
             x (torch.Tensor): of shape [B, C_out, T, H, W]
         """
 
-        N_t, N_h, N_w = [self.input_size[i] // self.patch_size[i] for i in range(3)]
+        N_t, N_h, N_w = [self.input_size[i] // self.patch_size[i]
+                         for i in range(3)]
         T_p, H_p, W_p = self.patch_size
         x = rearrange(
             x,
@@ -322,10 +354,12 @@ class STDiT(nn.Module):
             grid_size = self.input_size[1:]
         pos_embed = get_2d_sincos_pos_embed(
             self.hidden_size,
-            (grid_size[0] // self.patch_size[1], grid_size[1] // self.patch_size[2]),
+            (grid_size[0] // self.patch_size[1],
+             grid_size[1] // self.patch_size[2]),
             scale=self.space_scale,
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def get_temporal_pos_embed(self):
@@ -334,7 +368,8 @@ class STDiT(nn.Module):
             self.input_size[0] // self.patch_size[0],
             scale=self.time_scale,
         )
-        pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0).requires_grad_(False)
+        pos_embed = torch.from_numpy(
+            pos_embed).float().unsqueeze(0).requires_grad_(False)
         return pos_embed
 
     def freeze_not_temporal(self):
@@ -372,8 +407,9 @@ class STDiT(nn.Module):
         nn.init.normal_(self.t_block[1].weight, std=0.02)
 
         # Initialize caption embedding MLP:
-        nn.init.normal_(self.y_embedder.y_proj.fc1.weight, std=0.02)
-        nn.init.normal_(self.y_embedder.y_proj.fc2.weight, std=0.02)
+        if self.use_text_encoder:
+            nn.init.normal_(self.y_embedder.y_proj.fc1.weight, std=0.02)
+            nn.init.normal_(self.y_embedder.y_proj.fc2.weight, std=0.02)
 
         # Zero-out adaLN modulation layers in PixArt blocks:
         for block in self.blocks:
@@ -387,14 +423,17 @@ class STDiT(nn.Module):
 
 @MODELS.register_module("STDiT-XL/2")
 def STDiT_XL_2(from_pretrained=None, **kwargs):
-    model = STDiT(depth=28, hidden_size=1152, patch_size=(1, 2, 2), num_heads=16, **kwargs)
+    model = STDiT(depth=28, hidden_size=1152, patch_size=(
+        1, 2, 2), num_heads=16, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
 
+
 @MODELS.register_module("STDiT-S/2")
 def STDiT_S_2(from_pretrained=None, **kwargs):
-    model = STDiT(depth=12, hidden_size=384, patch_size=(1, 2, 2), num_heads=6, **kwargs)
+    model = STDiT(depth=6, hidden_size=384, patch_size=(
+        1, 2, 2), num_heads=6, **kwargs)
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
