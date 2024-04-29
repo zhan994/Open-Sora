@@ -4,8 +4,10 @@ image_size = (32, 32)
 
 # Define model
 model = dict(
-    type="Latte-S/2",
+    type="STDiT-S/2",
     condition="label_10",
+    space_scale=1.0,
+    time_scale=1.0,
     from_pretrained="PRETRAINED_MODEL",
     enable_flashattn=False,
     enable_layernorm_kernel=False
@@ -29,4 +31,4 @@ dtype = "fp16"
 batch_size = 2
 seed = 42
 prompt_path = "./assets/texts/dyna_mnist_id.txt"
-save_dir = "./output_samples/4x32x32/"
+save_dir = "./output_samples/4x32x32-stdit/"
