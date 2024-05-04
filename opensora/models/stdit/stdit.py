@@ -437,3 +437,11 @@ def STDiT_S_2(from_pretrained=None, **kwargs):
     if from_pretrained is not None:
         load_checkpoint(model, from_pretrained)
     return model
+
+@MODELS.register_module("STDiT-SS/2")
+def STDiT_SS_2(from_pretrained=None, **kwargs):
+    model = STDiT(depth=12, hidden_size=384, patch_size=(
+        1, 2, 2), num_heads=6, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
