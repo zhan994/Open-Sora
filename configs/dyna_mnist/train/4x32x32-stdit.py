@@ -42,7 +42,7 @@ seed = 42
 outputs = "outputs"
 wandb = False
 
-epochs = 1000
+epochs = 2000
 log_every = 10
 ckpt_every = 10000
 load = None
