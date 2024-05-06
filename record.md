@@ -144,3 +144,78 @@ prompt_path = "./assets/texts/dyna_mnist_id.txt"
 save_dir = "./outputs/samples/"
 ```
 
+# 3 测试数据
+
+使用9种动态（包含不动）的数据集进行模型训练以及推理，模型分别为`Latte-S/2`、`STDiT-S/2`和`STDiT-SS/2`，模型结构如下：
+```python
+@MODELS.register_module("Latte-S/2")
+def Latte_S_2(from_pretrained=None, **kwargs):
+    model = Latte(
+        depth=12,
+        hidden_size=384,
+        patch_size=(1, 2, 2),
+        num_heads=6,
+        **kwargs,
+    )
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+@MODELS.register_module("STDiT-S/2")
+def STDiT_S_2(from_pretrained=None, **kwargs):
+    model = STDiT(depth=6, hidden_size=384, patch_size=(
+        1, 2, 2), num_heads=6, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+
+@MODELS.register_module("STDiT-SS/2")
+def STDiT_SS_2(from_pretrained=None, **kwargs):
+    model = STDiT(depth=12, hidden_size=384, patch_size=(
+        1, 2, 2), num_heads=6, **kwargs)
+    if from_pretrained is not None:
+        load_checkpoint(model, from_pretrained)
+    return model
+```
+## 测试一
+
+| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
+| -------- | --------- | --------- | ---------- |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+
+## 测试二
+| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
+| -------- | --------- | --------- | ---------- |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+
+## 测试三
+| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
+| -------- | --------- | --------- | ---------- |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |
+|          |           |           |            |

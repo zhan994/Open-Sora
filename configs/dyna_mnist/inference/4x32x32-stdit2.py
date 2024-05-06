@@ -29,6 +29,6 @@ dtype = "fp16"
 
 # Others
 batch_size = 2
-seed = 42
+seed = 0
 prompt_path = "./assets/texts/dyna_mnist_id.txt"
 save_dir = "./output_samples/4x32x32-stdit2/"
