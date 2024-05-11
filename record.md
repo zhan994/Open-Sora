@@ -177,45 +177,16 @@ def STDiT_SS_2(from_pretrained=None, **kwargs):
         load_checkpoint(model, from_pretrained)
     return model
 ```
-## 测试一
+| 采样序号 | Latte-S/2                                | STDiT-S/2                                | STDiT-SS/2                                |
+| -------- | ---------------------------------------- | ---------------------------------------- | ----------------------------------------- |
+| 0        | ![](imgs/4x32x32-latte_s_2/sample_0.png) | ![](imgs/4x32x32-stdit_s_2/sample_0.png) | ![](imgs/4x32x32-stdit_ss_2/sample_0.png) |
+| 1        | ![](imgs/4x32x32-latte_s_2/sample_1.png) | ![](imgs/4x32x32-stdit_s_2/sample_1.png) | ![](imgs/4x32x32-stdit_ss_2/sample_1.png) |
+| 2        | ![](imgs/4x32x32-latte_s_2/sample_2.png) | ![](imgs/4x32x32-stdit_s_2/sample_2.png) | ![](imgs/4x32x32-stdit_ss_2/sample_2.png) |
+| 3        | ![](imgs/4x32x32-latte_s_2/sample_3.png) | ![](imgs/4x32x32-stdit_s_2/sample_3.png) | ![](imgs/4x32x32-stdit_ss_2/sample_3.png) |
+| 4        | ![](imgs/4x32x32-latte_s_2/sample_4.png) | ![](imgs/4x32x32-stdit_s_2/sample_4.png) | ![](imgs/4x32x32-stdit_ss_2/sample_4.png) |
+| 5        | ![](imgs/4x32x32-latte_s_2/sample_5.png) | ![](imgs/4x32x32-stdit_s_2/sample_5.png) | ![](imgs/4x32x32-stdit_ss_2/sample_5.png) |
+| 6        | ![](imgs/4x32x32-latte_s_2/sample_6.png) | ![](imgs/4x32x32-stdit_s_2/sample_6.png) | ![](imgs/4x32x32-stdit_ss_2/sample_6.png) |
+| 7        | ![](imgs/4x32x32-latte_s_2/sample_7.png) | ![](imgs/4x32x32-stdit_s_2/sample_7.png) | ![](imgs/4x32x32-stdit_ss_2/sample_7.png) |
+| 8        | ![](imgs/4x32x32-latte_s_2/sample_8.png) | ![](imgs/4x32x32-stdit_s_2/sample_8.png) | ![](imgs/4x32x32-stdit_ss_2/sample_8.png) |
+| 9        | ![](imgs/4x32x32-latte_s_2/sample_9.png) | ![](imgs/4x32x32-stdit_s_2/sample_9.png) | ![](imgs/4x32x32-stdit_ss_2/sample_9.png) |
 
-| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
-| -------- | --------- | --------- | ---------- |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-
-## 测试二
-| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
-| -------- | --------- | --------- | ---------- |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-
-## 测试三
-| 采样对象 | Latte-S/2 | STDiT-S/2 | STDiT-SS/2 |
-| -------- | --------- | --------- | ---------- |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
-|          |           |           |            |
