@@ -83,7 +83,7 @@ class DPS(SpacedDiffusion):
         if additional_args is not None:
             model_args.update(additional_args)
 
-        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
+        # forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)    
         clip_denoised = False
         samples = self.p_sample_loop_progressive(
             model,
