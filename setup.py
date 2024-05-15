@@ -38,6 +38,7 @@ setup(
             "docs",
             "outputs",
             "pretrained_models",
+            "reference",
             "scripts",
             "tests",
             "tools",
