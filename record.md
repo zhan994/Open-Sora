@@ -1,79 +1,24 @@
-# 1 安装
-
-针对`ubuntu2004`下的`python3.8 + cuda11.3 + pytorch1.12`安装。
+# 1 inference 
 
 ```bash
-pip3_install_pkg colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.13 triton packaging ninja apex imageio-ffmpeg
+torchrun --nproc_per_node 1 --standalone scripts/inference.py configs/dyna_mnist/inference/4x32x32-stdit2.py --ckpt-path pretrained_models/012-F4S1-STDiT-SS-2_20240513/epoch993-global_step310000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
 
-# install flash attention (optional) cuda版本不够 
-pip3_install_pkg flash-attn --no-build-isolation
-
-# install this project
-git clone https://github.com/hpcaitech/Open-Sora
-cd Open-Sora
-pip install -v .
 ```
-
-针对工作站`ubuntu2004`下的`python3.10 + cuda11.8 + pytorch2.1.2`安装。
 
 ```bash
-conda activate opensora
-# 安装到/opt/anaconda3/envs/opensora下，需要以sudo权限
-sudo /opt/anaconda3/envs/opensora/bin/pip install -i https://pypi.tuna.tsinghua.edu.cn/simple colossalai accelerate diffusers ftfy gdown mmengine pre-commit av tensorboard timm tqdm transformers wandb xformers==0.0.23.post1 triton imageio-ffmpeg
-
-# install flash attention (optional)
-pip3_install_pkg flash-attn --no-build-isolation
-
-# install this project
-git clone https://github.com/hpcaitech/Open-Sora
-cd Open-Sora
-pip install -v .
-```
-
-
-
-# 2 训练推理
-
-## 2.1 数据集
-
-针对`DynaMNIST`数据使用以下脚本生成训练使用的`CSV`文件即可。
-
-```bash
-python3 tools/datasets/convert_dataset.py dyna_mnist ~/Downloads/data/DynaMNIST_20240321
-```
-
-## 2.2 训练
-
-使用`4x32x32-class`的配置训练`DynaMNIST`，如下：
-
-```bash
-torchrun --nproc_per_node=1 --nnodes=1 scripts/train.py configs/dyna_mnist/train/4x32x32-class.py --data-path YOUR_CSV_PATH --load PRETRAINED_MODEL_DIR
-```
-
-
-```python
 num_frames = 4
-frame_interval = 1
+fps = 1
 image_size = (32, 32)
-
-# Define dataset
-root = None
-data_path = "CSV_PATH"
-use_image_transform = False
-num_workers = 4
-
-# Define acceleration
-dtype = "bf16"
-grad_checkpoint = True
-plugin = "zero2"
-sp_size = 1
 
 # Define model
 model = dict(
-    type="Latte-S/2",
+    type="STDiT-SS/2",
     condition="label_10",
+    space_scale=1.0,
+    time_scale=1.0,
+    from_pretrained="PRETRAINED_MODEL",
     enable_flashattn=False,
-    enable_layernorm_kernel=False,
+    enable_layernorm_kernel=False
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -85,42 +30,37 @@ text_encoder = dict(
 )
 scheduler = dict(
     type="iddpm",
-    timestep_respacing="",
+    num_sampling_steps=100,
+    cfg_scale=7.0,
 )
+dtype = "fp16"
 
 # Others
-seed = 42
-outputs = "outputs"
-wandb = False
-
-epochs = 1000
-log_every = 10
-ckpt_every = 5000
-load = None
-
-batch_size = 8
-lr = 2e-5
-grad_clip = 1.0
+batch_size = 1
+seed = 0
+prompt_path = "./assets/texts/dyna_mnist_id.txt"
+save_dir = "./output_samples/4x32x32-stdit2/"
 ```
 
-## 2.3 推理
 
-使用`4x32x32-class`的配置采样`DynaMNIST`，如下：
+# 2  inference_novae 2 frames 
 
 ```bash
-torchrun --nproc_per_node 1 --standalone scripts/inference.py configs/dyna_mnist/inference/4x32x32-class.py --ckpt-path outputs/000-F4S1-Latte-S-2/epoch764-global_step179000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
+torchrun --nproc_per_node 1 --standalone scripts/inference_novae.py configs/dyna_mnist/inference/2x32x32-class.py --ckpt-path pretrained_models/epoch330-global_step310000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
 ```
 
-```python
-num_frames = 4
-fps = 0.5
+```bash
+num_frames = 2
+fps = 1
 image_size = (32, 32)
 
 # Define model
 model = dict(
-    type="Latte-S/2",
+    type="Latte-XS/2",
     condition="label_10",
-    from_pretrained="PRETRAINED_MODEL"
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flashattn=False,
+    enable_layernorm_kernel=False
 )
 vae = dict(
     type="VideoAutoencoderKL",
@@ -131,62 +71,122 @@ text_encoder = dict(
     num_classes=10,
 )
 scheduler = dict(
-    type="dpm-solver",
-    num_sampling_steps=20,
-    cfg_scale=4.0,
+    type="iddpm",
+    num_sampling_steps=100,
+    cfg_scale=7.0,
 )
 dtype = "fp16"
 
 # Others
-batch_size = 2
+batch_size = 1
 seed = 42
 prompt_path = "./assets/texts/dyna_mnist_id.txt"
-save_dir = "./outputs/samples/"
+save_dir = "./output_samples/2x32x32-class/"
 ```
 
-# 3 测试数据
+# 3  inference_dps_novae 2 frames 
 
-使用9种动态（包含不动）的数据集进行模型训练以及推理，模型分别为`Latte-S/2`、`STDiT-S/2`和`STDiT-SS/2`，模型结构如下：
-```python
-@MODELS.register_module("Latte-S/2")
-def Latte_S_2(from_pretrained=None, **kwargs):
-    model = Latte(
-        depth=12,
-        hidden_size=384,
-        patch_size=(1, 2, 2),
-        num_heads=6,
-        **kwargs,
-    )
-    if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
-    return model
-
-@MODELS.register_module("STDiT-S/2")
-def STDiT_S_2(from_pretrained=None, **kwargs):
-    model = STDiT(depth=6, hidden_size=384, patch_size=(
-        1, 2, 2), num_heads=6, **kwargs)
-    if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
-    return model
-
-@MODELS.register_module("STDiT-SS/2")
-def STDiT_SS_2(from_pretrained=None, **kwargs):
-    model = STDiT(depth=12, hidden_size=384, patch_size=(
-        1, 2, 2), num_heads=6, **kwargs)
-    if from_pretrained is not None:
-        load_checkpoint(model, from_pretrained)
-    return model
+```bash
+torchrun --nproc_per_node 1 --standalone scripts/infer_dps_novae.py configs/dyna_mnist/inference/2x32x32-dps.py --ckpt-path pretrained_models/epoch330-global_step310000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
 ```
-| 采样序号 | Latte-S/2                                | STDiT-S/2                                | STDiT-SS/2                                |
-| -------- | ---------------------------------------- | ---------------------------------------- | ----------------------------------------- |
-| 0        | ![](imgs/4x32x32-latte_s_2/sample_0.png) | ![](imgs/4x32x32-stdit_s_2/sample_0.png) | ![](imgs/4x32x32-stdit_ss_2/sample_0.png) |
-| 1        | ![](imgs/4x32x32-latte_s_2/sample_1.png) | ![](imgs/4x32x32-stdit_s_2/sample_1.png) | ![](imgs/4x32x32-stdit_ss_2/sample_1.png) |
-| 2        | ![](imgs/4x32x32-latte_s_2/sample_2.png) | ![](imgs/4x32x32-stdit_s_2/sample_2.png) | ![](imgs/4x32x32-stdit_ss_2/sample_2.png) |
-| 3        | ![](imgs/4x32x32-latte_s_2/sample_3.png) | ![](imgs/4x32x32-stdit_s_2/sample_3.png) | ![](imgs/4x32x32-stdit_ss_2/sample_3.png) |
-| 4        | ![](imgs/4x32x32-latte_s_2/sample_4.png) | ![](imgs/4x32x32-stdit_s_2/sample_4.png) | ![](imgs/4x32x32-stdit_ss_2/sample_4.png) |
-| 5        | ![](imgs/4x32x32-latte_s_2/sample_5.png) | ![](imgs/4x32x32-stdit_s_2/sample_5.png) | ![](imgs/4x32x32-stdit_ss_2/sample_5.png) |
-| 6        | ![](imgs/4x32x32-latte_s_2/sample_6.png) | ![](imgs/4x32x32-stdit_s_2/sample_6.png) | ![](imgs/4x32x32-stdit_ss_2/sample_6.png) |
-| 7        | ![](imgs/4x32x32-latte_s_2/sample_7.png) | ![](imgs/4x32x32-stdit_s_2/sample_7.png) | ![](imgs/4x32x32-stdit_ss_2/sample_7.png) |
-| 8        | ![](imgs/4x32x32-latte_s_2/sample_8.png) | ![](imgs/4x32x32-stdit_s_2/sample_8.png) | ![](imgs/4x32x32-stdit_ss_2/sample_8.png) |
-| 9        | ![](imgs/4x32x32-latte_s_2/sample_9.png) | ![](imgs/4x32x32-stdit_s_2/sample_9.png) | ![](imgs/4x32x32-stdit_ss_2/sample_9.png) |
+
+```bash
+num_frames = 2
+fps = 1
+image_size = (32, 32)
+
+# Define model
+model = dict(
+    type="Latte-XS/2",
+    condition="label_10",
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flashattn=False,
+    enable_layernorm_kernel=False
+)
+vae = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
+text_encoder = dict(
+    type="classes",
+    num_classes=10,
+)
+scheduler = dict(
+    type="dps",
+    num_sampling_steps=1000,
+    cfg_scale=7.0,
+)
+dtype = "fp16"
+
+# Others
+batch_size = 1
+seed = 42
+prompt_path = "./assets/texts/dyna_mnist_id.txt"
+save_dir = "./output_samples/2x32x32-dps/"
+ref_dir = "./reference/2x32x32-dps/"
+dps_scale = 2
+
+```
+
+# 4 inference_dps_novae 4 frames 
+
+```bash
+ torchrun --nproc_per_node 1 --standalone scripts/infer_dps.py configs/dyna_mnist/inference/4x32x32-dps.py --ckpt-path pretrained_models/012-F4S1-STDiT-SS-2_20240513/epoch993-global_step310000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
+```
+
+```bash
+num_frames = 2
+fps = 1
+image_size = (32, 32)
+
+# Define model
+model = dict(
+    type="Latte-XS/2",
+    condition="label_10",
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flashattn=False,
+    enable_layernorm_kernel=False
+)
+vae = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
+text_encoder = dict(num_frames = 4
+fps = 1
+image_size = (32, 32)
+
+# Define model
+model = dict(
+    type="STDiT-SS/2",
+    condition="label_10",
+    space_scale=1.0,
+    time_scale=1.0,
+    from_pretrained="PRETRAINED_MODEL",
+    enable_flashattn=False,
+    enable_layernorm_kernel=False
+)
+vae = dict(
+    type="VideoAutoencoderKL",
+    from_pretrained="stabilityai/sd-vae-ft-ema",
+)
+text_encoder = dict(
+    type="classes",
+    num_classes=10,
+)
+scheduler = dict(
+    type="dps",
+    num_sampling_steps=1000,
+    cfg_scale=7.0,
+)
+dtype = "fp16"
+
+# Others
+batch_size = 1
+seed = 0
+prompt_path = "./assets/texts/dyna_mnist_id.txt"
+save_dir = "./output_samples/4x32x32-dps/"
+ref_dir = "./reference/4x32x32-dps/"
+dps_scale = 0.8
+
+```
 
