@@ -33,5 +33,6 @@ seed = 0
 prompt_path = "./assets/texts/dyna_mnist_id.txt"
 save_dir = "./output_samples/4x32x32-dps/"
 ref_dir = "./reference/4x32x32-dps/"
-dps_scale = 0.8
+dps_scale = 0.5
+# super resolution downsample scale 8 -> dps scale 0.5; downsample scale 4 -> dps scale 0.1
 
