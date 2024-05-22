@@ -128,7 +128,7 @@ dps_scale = 2
 
 ```
 
-# 4 inference_dps_novae 4 frames 
+# 4 inference_dps_vae 4 frames 
 
 ```bash
  torchrun --nproc_per_node 1 --standalone scripts/infer_dps.py configs/dyna_mnist/inference/4x32x32-dps.py --ckpt-path pretrained_models/012-F4S1-STDiT-SS-2_20240513/epoch993-global_step310000/ema.pt --prompt-path assets/texts/dyna_mnist_id.txt
