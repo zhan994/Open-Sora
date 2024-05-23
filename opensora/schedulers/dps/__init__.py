@@ -71,14 +71,11 @@ class DPS(SpacedDiffusion):
     ):
         n = len(prompts)
         z = torch.randn(n, *z_size, device=device)
-        # z = torch.cat([z, z], 0)
+        # z = torch.cat([z, z], 0) 
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
-        # model_args["y"] = torch.cat([model_args["y"], y_null], 0)
+        # model_args["y"] = torch.cat([model_args["y"], y_null], 0)  
         model_args["y"] = y_null
-
-        # if ob is not None:
-        #     ob = torch.cat([ob, ob], dim=0)
 
         if additional_args is not None:
             model_args.update(additional_args)
