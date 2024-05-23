@@ -81,8 +81,8 @@ class DPS(SpacedDiffusion):
             model_args.update(additional_args)
 
         forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
-        samples = self.p_sample_loop_progressive(
-            model,                                                       # note use model directly
+        samples = self.p_sample_loop_progressive(                        # use p_sample_loop_progressive
+            model,                                                       # use model directly
             z.shape,
             z,
             ob,                                                          # note
@@ -93,7 +93,6 @@ class DPS(SpacedDiffusion):
             progress=True,
             device=device,
         )
-        print("clip_denoised", False)
         print("observation size", ob.shape)
         # samples, _ = samples.chunk(2, dim=0)                           # note cancel chunk
         return samples
