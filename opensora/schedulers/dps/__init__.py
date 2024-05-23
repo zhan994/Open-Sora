@@ -61,9 +61,9 @@ class DPS(SpacedDiffusion):
             self,
             model,
             text_encoder,
-            ob,
-            operator,
-            dps_scale,
+            ob,                                                          # note
+            operator,                                                    # note
+            dps_scale,                                                   # note
             z_size,
             prompts,
             device,
@@ -71,32 +71,31 @@ class DPS(SpacedDiffusion):
     ):
         n = len(prompts)
         z = torch.randn(n, *z_size, device=device)
-        # z = torch.cat([z, z], 0) 
+        # z = torch.cat([z, z], 0)                                       # note cancel cat
         model_args = text_encoder.encode(prompts)
         y_null = text_encoder.null(n)
-        # model_args["y"] = torch.cat([model_args["y"], y_null], 0)  
+        # model_args["y"] = torch.cat([model_args["y"], y_null], 0)      # note
         model_args["y"] = y_null
 
         if additional_args is not None:
             model_args.update(additional_args)
 
-        # forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)    
-        clip_denoised = False
+        forward = partial(forward_with_cfg, model, cfg_scale=self.cfg_scale)
         samples = self.p_sample_loop_progressive(
-            model,
+            model,                                                       # note use model directly
             z.shape,
             z,
-            ob,
-            operator,
-            scale=dps_scale,
-            clip_denoised=clip_denoised,
+            ob,                                                          # note
+            operator,                                                    # note
+            scale=dps_scale,                                             # note
+            clip_denoised=False,
             model_kwargs=model_args,
             progress=True,
             device=device,
         )
-        print("clip_denoised", clip_denoised)
+        print("clip_denoised", False)
         print("observation size", ob.shape)
-        # samples, _ = samples.chunk(2, dim=0)
+        # samples, _ = samples.chunk(2, dim=0)                           # note cancel chunk
         return samples
 
 
