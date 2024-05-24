@@ -26,6 +26,13 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
         save_image([x], save_path, normalize=normalize,
                    value_range=value_range)
     else:
+        # for t in range(0,x.shape[1]):
+        #     save_path_frame = save_path + f"_frame {t}"
+        #     save_path_frame = save_path_frame + ".png"
+        #     sample_frame = x[:, t, :, :]
+        #     save_image(sample_frame, save_path_frame, normalize=normalize,
+        #                value_range=value_range)
+
         img_path = save_path + ".png"
         video_path = save_path + ".mp4"
         if normalize:
@@ -41,7 +48,6 @@ def save_sample(x, fps=8, save_path=None, normalize=True, value_range=(-1, 1)):
         write_video(video_path, x_v, fps=fps, video_codec="h264")
         x_i = x.permute(1, 0, 2, 3)
         save_image(x_i, img_path, nrow=1, pad_value=100)
-
     print(f"Saved to {save_path}")
 
 
